@@ -34,8 +34,8 @@ module.exports = function(app, passport){
     });
 
     app.post('/api/postLevel', passport.authenticate('api-login', {
-        successRedirect: '/api/redirPostLogin',
-        failureRedirect: '/api/redirPostLogin'
+        successRedirect: '/api/redirPostLevel',
+        failureRedirect: '/api/redirPostLevel'
     }));
 
 
