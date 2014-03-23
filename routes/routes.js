@@ -33,7 +33,7 @@ module.exports = function(app, passport){
         res.send(msg[0]);
     });
 
-    app.post('/api/postLevel', passport.authenticate('api-login', {
+    app.post('/api/postLevel', passport.authenticate('api-postLevel', {
         successRedirect: '/api/redirPostLevel',
         failureRedirect: '/api/redirPostLevel'
     }));

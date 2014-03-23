@@ -3,7 +3,7 @@
  */
 
 var mongoose = require('mongoose');
-var User = require('user.js');
+
 
 var levelSchema = new mongoose.Schema({
 
@@ -36,5 +36,4 @@ var levelSchema = new mongoose.Schema({
 
 });
 
-
-module.exports = mongoose.model('Level', levelSchema)
+module.exports = mongoose.model('Level', levelSchema);

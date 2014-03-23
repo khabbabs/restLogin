@@ -6,7 +6,7 @@ var LocalStrategy   = require('passport-local').Strategy;
 
 // load up the user model
 var User = require('../models/user');
-
+var Level = require('../models/level');
 // expose this function to our app using module.exports
 module.exports = function(passport) {
 
@@ -122,8 +122,8 @@ module.exports = function(passport) {
 
         }));
 
-
-    passport.use('api-login', new LocalStrategy({
+//=========================api login for posting levels=======================================
+    passport.use('api-postLevel', new LocalStrategy({
             // by default, local strategy uses username and password, we will override with email
             usernameField : 'username',
             passwordField : 'password',
@@ -149,12 +149,26 @@ module.exports = function(passport) {
                 // all is well, return successful user
                 if (user){
                     console.log("post level")
+                    var newlevel = Level({
+                        title: req.body.title,
+                        description: req.body.description,
+                        difficulty: req.body.difficulty,
+                        author_id: username,
+                        level_str: req.body.level_str
+                    });
 
-                    return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username));
+                    newlevel.save(function(err){
+                        if (!err){
+                            return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: lvl crt "));
+                        }else{
+                            return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: "+err));
+                        }
+                    });
+
+
+//                    return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: "+retMsg));
                 }
                 //return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username));
             });
-
         }));
-
 };
