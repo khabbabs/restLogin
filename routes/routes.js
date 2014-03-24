@@ -2,6 +2,9 @@
  * Created by khabbabsultra on 3/11/14.
  */
 
+
+var api = require('../config/api');
+
 module.exports = function(app, passport){
 
     app.get('/', function(req, res){
@@ -38,6 +41,16 @@ module.exports = function(app, passport){
         failureRedirect: '/api/redirPostLevel'
     }));
 
+    app.get('/api/levels/user/:id', function(req, res){
 
+        return api.listByUser(req,res);
+
+    });
+
+    app.get('/api/levels/diff/:Difftype', function(req, res){
+
+        return api.listByDiffType(req,res);
+
+    });
 
 }
