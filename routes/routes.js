@@ -33,24 +33,27 @@ module.exports = function(app, passport){
     app.get('/api/redirPostLevel', function(req, res){
         console.log('/ post level');
         msg = req.flash('loginMessage');
-        res.send(msg[0]);
+        console.log(msg)
+        res.json(JSON.stringify({status :msg[0]}));
     });
 
-    app.post('/api/postLevel', passport.authenticate('api-postLevel', {
-        successRedirect: '/api/redirPostLevel',
-        failureRedirect: '/api/redirPostLevel'
-    }));
+//    app.post('/api/postLevel', passport.authenticate('api-postLevel', {
+//        successRedirect: '/api/redirPostLevel',
+//        failureRedirect: '/api/redirPostLevel'
+//    }));
+
+
+    app.post('/api/postLevel', function(req, res){
+
+        return api.postLevel(req,res);
+    });
 
     app.get('/api/levels/user/:id', function(req, res){
-
         return api.listByUser(req,res);
-
     });
 
     app.get('/api/levels/diff/:Difftype', function(req, res){
-
         return api.listByDiffType(req,res);
-
     });
 
 }

@@ -159,7 +159,7 @@ module.exports = function(passport) {
 
                     newlevel.save(function(err){
                         if (!err){
-                            return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: lvl crt "));
+                            return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: level saved "));
                         }else{
                             return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: "+err));
                         }

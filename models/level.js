@@ -36,4 +36,9 @@ var levelSchema = new mongoose.Schema({
 
 });
 
+// this will be used in scoreboard to reference its level
+levelSchema.virtual('levelId').get(function(){
+   return this._id;
+});
+
 module.exports = mongoose.model('Level', levelSchema);
