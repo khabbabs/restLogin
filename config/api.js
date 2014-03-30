@@ -39,7 +39,8 @@ module.exports.postLevel = function(req, res){
 
     User.findOne({ 'local.username' :  req.body.username }, function(err, user) {
         // if there are any errors, return the error before anything else
-        // console.log(req)
+        console.log(req)
+        // console.log(req.body);
         if (err){
             return res.send("error in api.postLevel");
         }
