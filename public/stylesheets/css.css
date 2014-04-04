@@ -1,0 +1,24 @@
+/* Load fonts ! :)
+	PLEASE use .woff fonts only
+*/
+@font-face {
+  font-family: 'Futurastd';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Futurastd'), local('Futurastd-Light'), url(fonts/futurastd-light-webfont.woff) format('woff');
+}
+
+
+/*
+	from http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting
+	makes everything unselectable
+*/
+
+* {
+   -moz-user-select: none;
+   -khtml-user-select: none;
+   -webkit-user-select: none;
+   -webkit-touch-callout: none;
+   -ms-user-select: none;
+   user-select: none;
+}

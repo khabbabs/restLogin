@@ -1,12 +1,53 @@
-<!DOCTYPE html>
-<html>
-<% include header.ejs%>
-  <head>
-    <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-  </head>
-  <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
-  </body>
-</html>
+<!DOCTYPE html><html><head>
+	<title>Automaton</title>
+	<meta name="description" content="Automaton">
+	<meta charset="UTF-8">
+	<style>*{position:absolute;margin:0px;}</style>
+
+	<script src="/javascripts/src/extern/jquery-1.11.0.min.js"></script>
+	<!-- svg loader files. will be deleted in final version -->
+	<script type="text/javascript" src="/javascripts/src/extern/rgbcolor.js"></script>
+	<script type="text/javascript" src="/javascripts/src/extern/StackBlur.js"></script>
+	<script type="text/javascript" src="/javascripts/src/extern/canvg.js"></script>
+	<link rel="stylesheet" type="text/css" href="/stylesheets/css.css"></script>
+
+
+	<!-- production version. Swap with dev version if you need it. Try to keep it minified when you push. -->
+
+	<script type="text/javascript" src="/javascripts/src/system/util.js"></script>        <!-- this must be first -->
+	<script type="text/javascript" src="/javascripts/src/system/application.js"></script> <!-- this must be second -->
+	<script type="text/javascript" src="/javascripts/src/system/canvas.js"></script>
+	<script type="text/javascript" src="/javascripts/src/system/engine.js"></script>
+	<script type="text/javascript" src="/javascripts/src/system/input.js"></script>
+	<script type="text/javascript" src="/javascripts/src/system/gameinput.js"></script>
+	<script type="text/javascript" src="/javascripts/src/system/guiinput.js"></script>
+	<script type="text/javascript" src="/javascripts/src/system/serverapi.js"></script>
+
+
+	<script type="text/javascript" src="/javascripts/src/gui/guiFrame.js"></script>
+	<script type="text/javascript" src="/javascripts/src/gui/guiButtons.js"></script>
+	<script type="text/javascript" src="/javascripts/src/gui/guiText.js"></script>
+	<script type="text/javascript" src="/javascripts/src/gui/guiDrag.js"></script>
+	<script type="text/javascript" src="/javascripts/src/gui/guiTable.js"></script>
+	<script type="text/javascript" src="/javascripts/src/gui/guiWidget.js"></script>
+	<script type="text/javascript" src="/javascripts/src/gui/guiSetup.js"></script>
+
+	<script type="text/javascript" src="/javascripts/src/extern/parser.js"></script>
+
+	<script type="text/javascript" src="/javascripts/src/game/game.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/instructionCatalog.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/planning/instruction.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/planning/level.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/planning/controls.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/planning/operation.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/simulation/token.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/simulation/automaton.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/simulation/instruction.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/simulation/cell.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/simulation/level.js"></script>
+	<script type="text/javascript" src="/javascripts/src/game/testLevels.js"></script>    <!-- DELETE -->
+
+	<script type="text/javascript" src="/javascripts/src/main.js"></script>               <!-- this must be last -->
+
+
+</head><body bgcolor="000000"></body></html>
