@@ -26,7 +26,7 @@ App.makeInstructionCatalog = function(){
 		'PAUSE'		: 24,
 	};
 
-	ins.render = function(gfx,type,x,y,c,size,selected,copied){
+	ins.render = function(gfx,type,x,y,c,size,selected,copied,moving){
 		gfx.save();
 		gfx.translate(x,y);
 
@@ -59,6 +59,12 @@ App.makeInstructionCatalog = function(){
 		if(selected){
 			gfx.fillStyle = '#ffffff';
 			gfx.fillRect(2,2,size-2,size-2);
+
+			// turn tile background green if it is in the proccess of being moved
+			if(moving){
+				gfx.fillStyle = '#00cc33';
+				gfx.fillRect(2,2,size-2,size-2);
+			}
 
 			// turn tile background cyan if it is in the proccess of being copied
 			if(copied){

@@ -18,9 +18,11 @@ App.PlanningControls = function(){
 			this.dragged = true;
 		} else { this.dragged = false; }
 		//console.log(mX + ' ' + mY + ' ' + mC + ' ' + that.dragged);
-		if(!App.Game.currentPlanningLevel.copied){ that.select(that.dragged); }
-		else{
+		if(!App.Game.currentPlanningLevel.copied && !App.Game.currentPlanningLevel.moving){ that.select(that.dragged); }
+		else if(App.Game.currentPlanningLevel.copied){
 			App.Game.currentPlanningLevel.doCopy(that.downX, that.downY);
+		}else{
+			App.Game.currentPlanningLevel.doMove(that.downX, that.downY);
 		}
 	}
 
