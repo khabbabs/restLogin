@@ -74,13 +74,13 @@ module.exports = function(app, passport){
     });
 
 
-    app.options('/api/levels/user/:id', function(req, res){
+    // app.options('/api/levels/user/:id', function(req, res){
 
-        console.log("setting the header");
+    //     console.log("setting the header");
 
-        res.header("Access-Control-Allow-Origin","*")
-        res.end('');
-    });
+    //     res.header("Access-Control-Allow-Origin","*")
+    //     res.end('');
+    // });
 
     app.get('/api/levels/user/:id', function(req, res){
         console.log("getting by id");

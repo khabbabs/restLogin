@@ -10,16 +10,29 @@ var User = require('../models/user');
 
 
 module.exports.listByUser = function(req, res){
-    console.log('here1')
-    Level.find({author_id: req.params.id},function (err, level){
-        if (err){
-            console.log('in error')
-            res.send(err);
-        }else{
-            res.json(level);
-        }
-    })
+    console.log('in listByUser');
+    console.log(req.params.id);
 
+
+    User.findOne({'local.username': req.params.id}, function(err, user){
+        if(err){
+            console.log("user findOne error");
+            return res.send(err);
+        }
+        else if(!user){
+            console.log("can't find user "+req.params.id);
+            return res.json(JSON.stringify({'status': req.params.id+' does not exist'}));
+        }else{
+                Level.find({author_id: req.params.id},function (err, level){
+                if (err){
+                    console.log('in error level find')
+                    return res.send(err);
+                }else{
+                   return res.json(level);
+                }
+            });
+        }
+    });
 }
 
 module.exports.listByDiffType = function(req, res){
@@ -31,7 +44,7 @@ module.exports.listByDiffType = function(req, res){
         }else{
             res.json(level);
         }
-    })
+    });
 }
 
 module.exports.postLevel = function(req, res){
@@ -46,12 +59,12 @@ module.exports.postLevel = function(req, res){
         }
         // if no user is found, return the message
         if (!user)
-            return res.send("user does not exist"); // req.flash is the way to set flashdata using connect-flash
+            return res.json(JSON.stringify({'status': req.body.username+' does not exist'}));; // req.flash is the way to set flashdata using connect-flash
 
         // if the user is found but the password is wrong
         if (!user.validPassword(req.body.password))
-            return res.send("wrong password"); // create the loginMessage and save it to session as flashdata
-
+            //return res.send("wrong password"); // create the loginMessage and save it to session as flashdata
+            return res.json(JSON.stringify({'status': 'Wrong Password'}));
         // all is well, return successful user
         if (user){
             console.log("post level")
@@ -65,16 +78,14 @@ module.exports.postLevel = function(req, res){
 
             newlevel.save(function(err){
                 if (!err){
-                    console
-                    return res.send("level saved");
+                    //return res.send("level saved");
+                    return res.json(JSON.stringify({'status': 'level saved'}));
                 }else{
                     return res.send(err);
                 }
             });
-//                  return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: "+retMsg));
+        //return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: "+retMsg));
         }
         //return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username));
     });
-
-
 }
