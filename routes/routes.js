@@ -69,9 +69,14 @@ module.exports = function(app, passport){
 
 
     app.post('/api/postLevel', function(req, res){
-
         return api.postLevel(req,res);
     });
+
+    app.post('/api/postsignup', function(req,res){
+        console.log('postSignup');
+        return api.postSignUp(req,res);
+    });
+    
 
 
     // app.options('/api/levels/user/:id', function(req, res){

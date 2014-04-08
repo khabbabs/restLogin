@@ -47,19 +47,59 @@ module.exports.listByDiffType = function(req, res){
     });
 }
 
+module.exports.postSignUp = function(req,res){
+
+    
+    User.findOne({ 'local.username' : req.body.username },function(err,user){
+                
+        if(err){
+            console.log('error in post sign up:');
+            console.log(err);
+            return res.json(JSON.stringify({'status': 'error in api.postSignUp'}));
+        }
+        if(user){
+
+            return res.json(JSON.stringify({'status': req.body.username+' already exist'}));
+
+        }
+        else{
+
+            console.log('created new user: '+req.body.username);
+                        var newUser            = new User();
+
+                        // set the user's local credentials
+                        newUser.local.username = req.body.username;
+                        newUser.local.password = newUser.generateHash(req.body.password);
+                        // console.log('new user '+req.body.username+'created');
+                        // save the user
+                        newUser.save(function(err) {
+                            if (err){
+                                return res.json(JSON.stringify({'status': 'error in saving username'}));      
+                            }
+                            else{
+                                return res.json(JSON.stringify({'status': req.body.username+' created'}));
+                            }
+                        });
+
+        }
+
+    });
+
+}
+
 module.exports.postLevel = function(req, res){
 
 
     User.findOne({ 'local.username' :  req.body.username }, function(err, user) {
         // if there are any errors, return the error before anything else
-        console.log(req)
+        // console.log(req)
         // console.log(req.body);
         if (err){
             return res.send("error in api.postLevel");
         }
         // if no user is found, return the message
         if (!user)
-            return res.json(JSON.stringify({'status': req.body.username+' does not exist'}));; // req.flash is the way to set flashdata using connect-flash
+            return res.json(JSON.stringify({'status': req.body.username+' does not exist'})); // req.flash is the way to set flashdata using connect-flash
 
         // if the user is found but the password is wrong
         if (!user.validPassword(req.body.password))
