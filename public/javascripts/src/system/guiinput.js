@@ -51,6 +51,12 @@ App.makeGuiInput = function(){
 			App.Gui.activeComponent.clickDrag(mouseData.x, mouseData.y);
 	}
 
+	gInput.mouseWheel = function(mouseData){
+		//nothing yet! later, scrollable tables, maybe.
+		//right now, just block input if necessary
+		return App.Gui.testCoordinates(mouseData.x, mouseData.y);
+	}
+
 	//Just to allow key registration to happen here for ease of grokking the API
 	gInput.registerKey = function(key, callback){
 		App.InputHandler.registerKey(key, callback);

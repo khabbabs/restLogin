@@ -1,18 +1,28 @@
 App.PlanningControls = function(){
 	var that = this;
-	this.downX; this.downY; this.downC;
+	this.downX; this.downY; this.downC; this.downScrnX; this.downScrnY;
 	this.upX; this.upY; this.upC
+	this.curX; this.curY;
 	this.dragged = false;
+	this.isDown = false;
 
-	this.setDown = function(mX, mY, mC){
+	this.setCurrentMouseCoords = function(x, y){
+		that.curX = x;
+		that.curY = y;
+	}
+
+	this.setDown = function(mX, mY, mC, scrnX, scrnY){
 		that.dragged = false;
+		that.isDown = true;
 		that.downX = mX;
 		that.downY = mY;
 		that.downC = mC;
-		//console.log(mX + ' ' + mY + ' ' + mC + ' ' + that.dragged);
+		that.downScrnX = scrnX;
+		that.downScrnY = scrnY;
 	}
 	
 	this.setUp = function(mX, mY, mC){
+		that.isDown = false;
 		that.upX = mX; that.upY = mY; that.upC = mC;
 		if(that.downX !== that.upX || that.downY !== that.upY || that.downC !== that.upC){
 			this.dragged = true;
@@ -29,7 +39,7 @@ App.PlanningControls = function(){
 	this.select = function(isDrag){
 		if(isDrag){
 			// group select
-				App.Game.currentPlanningLevel.selectCells(that.downX,that.downY,that.upX,that.upY);
+				App.Game.currentPlanningLevel.selectCells(that.downX, that.downY, that.downC, that.upX, that.upY, that.upC);
 		}else{
 			// single instruction select
 			App.Game.currentPlanningLevel.selectInstruction(that.upX, that.upY, that.upC);

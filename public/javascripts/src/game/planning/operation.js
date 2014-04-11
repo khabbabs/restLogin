@@ -20,8 +20,9 @@ App.Operation = function(){
 	};
 
 	// contains the information needed to undo or redo a move operation
-	this.moveOp = function(instruction, newX, newY){
+	this.moveOp = function(instruction, oldX, oldY, newX, newY){
 		this.instruction = instruction;
+		this.oldX = oldX; this.oldY = oldY;
 		this.newX = newX; this.newY = newY;
 		this.overWritten = null;
 		this.opId = 'move';

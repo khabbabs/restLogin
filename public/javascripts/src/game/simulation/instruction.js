@@ -81,63 +81,20 @@ App.SimulationInstruction = function(level,x,y,color,type){
 				a.direction = App.DIRECTIONS.RIGHT;
 			};break;
 
-		case App.InstCatalog.TYPES['ROTATE CW']:
-
-			this.execute = function(a){
-				if(!a.colorFlags[this.color])return;
-				a.direction = (a.direction+3)%4;
-			};break;
-
-		case App.InstCatalog.TYPES['ROTATE CCW']:
-
-			this.execute = function(a){
-				if(!a.colorFlags[this.color])return;
-				a.direction = (a.direction+1)%4;
-			};break;
-
-		case App.InstCatalog.TYPES['IN STREAM']:
-
-			if(level.inStreams[color] === undefined)
-				level.inStreams[color] = [];
-			level.inStreams[color].push(this);
-
-			this.input = function(){
-				new App.SimulationToken(this.level,this.x,this.y,0);
-				App.Game.requestStaticRenderUpdate = true; // XXX: move this to token...?
-			}
-
-			this.execute = function(a){};break; // do nothing
-
-		case App.InstCatalog.TYPES['OUT STREAM']:
-
-			if(level.outStreams[color] === undefined)
-				level.outStreams[color] = [];
-			level.outStreams[color].push(this);
-
-			this.output = function(){
-				if(this.cell.tokens.length !== 0){
-					this.cell.tokens.splice(0,1);
-					App.Game.requestStaticRenderUpdate = true; // XXX: move this to token...?
-				}
-			}
-
-			this.execute = function(a){};break; // do nothing
-
 		case App.InstCatalog.TYPES['IN']:
 
 			this.execute = function(a){
 				if(!a.colorFlags[this.color])return;
-				if(!this.level.inStreams[this.color])return;
-				for(var i in this.level.inStreams[this.color])
-					this.level.inStreams[this.color][i].input();
+				if(a.tokenHeld !== undefined)return;
+				a.tokenHeld = new App.SimulationToken(this.level,this.x,this.y,Math.floor(Math.random()*9+1));
 			};break;
 
 		case App.InstCatalog.TYPES['OUT']:
 
 			this.execute = function(a){
 				if(!a.colorFlags[this.color])return;
-				for(var i in this.level.outStreams[this.color])
-					this.level.outStreams[this.color][i].output();
+				if(a.tokenHeld === undefined)return;
+				a.tokenHeld = undefined;
 			};break;
 
 		case App.InstCatalog.TYPES['GRAB']:
@@ -145,8 +102,7 @@ App.SimulationInstruction = function(level,x,y,color,type){
 			this.execute = function(a){
 				if(!a.colorFlags[this.color])return;
 				if(a.tokenHeld === undefined && this.cell.tokens.length !== 0){
-					a.tokenHeld = this.cell.tokens[0];
-					this.cell.tokens.splice(0,1);
+					a.tokenHeld = this.cell.tokens.pop();
 					App.Game.requestStaticRenderUpdate = true; // XXX: move this to token...?
 				}
 			};break;
@@ -168,8 +124,7 @@ App.SimulationInstruction = function(level,x,y,color,type){
 				if(!a.colorFlags[this.color])return;
 				if(a.tokenHeld === undefined){
 					if(this.cell.tokens.length !== 0){
-						a.tokenHeld = this.cell.tokens[0];
-						this.cell.tokens.splice(0,1);
+						a.tokenHeld = this.cell.tokens.pop();
 						App.Game.requestStaticRenderUpdate = true; // XXX: move this to token...?
 					}
 				}else{
@@ -183,32 +138,14 @@ App.SimulationInstruction = function(level,x,y,color,type){
 
 			this.execute = function(a){
 				if(!a.colorFlags[this.color])return;
-				if(a.tokenHeld !== undefined)++a.tokenHeld.number;
+				if(a.tokenHeld !== undefined)a.tokenHeld.increment();
 			};break;
 
 		case App.InstCatalog.TYPES['DEC']:
 
 			this.execute = function(a){
 				if(!a.colorFlags[this.color])return;
-				if(a.tokenHeld !== undefined)--a.tokenHeld.number;
-			};break;
-
-		case App.InstCatalog.TYPES['COND 0']:
-
-			// TODO: UP DOWN LEFT RIGHT
-			this.execute = function(a){
-			};break;
-
-		case App.InstCatalog.TYPES['COND +-']:
-
-			// TODO: UP DOWN LEFT RIGHT
-			this.execute = function(a){
-			};break;
-
-		case App.InstCatalog.TYPES['COND EVEN ODD']:
-
-			// TODO: UP DOWN LEFT RIGHT
-			this.execute = function(a){
+				if(a.tokenHeld !== undefined)a.tokenHeld.decrement();
 			};break;
 
 		case App.InstCatalog.TYPES['SYNC']:
@@ -228,6 +165,111 @@ App.SimulationInstruction = function(level,x,y,color,type){
 			this.execute = function(a){
 				if(!a.colorFlags[this.color])return;
 				App.Game.requestPause = true;
+			};break;
+
+		case App.InstCatalog.TYPES['COND 0 U']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				if(a.tokenHeld.number === 0)
+					a.direction = App.DIRECTIONS.UP;
+					
+			};break;
+
+		case App.InstCatalog.TYPES['COND 0 D']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				if(a.tokenHeld.number === 0)
+					a.direction = App.DIRECTIONS.DOWN;
+			};break;
+
+		case App.InstCatalog.TYPES['COND 0 L']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				if(a.tokenHeld.number === 0)
+					a.direction = App.DIRECTIONS.LEFT;
+			};break;
+
+		case App.InstCatalog.TYPES['COND 0 R']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				if(a.tokenHeld.number === 0)
+					a.direction = App.DIRECTIONS.RIGHT;
+			};break;
+
+		case App.InstCatalog.TYPES['COND TOKEN U']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				a.direction = App.DIRECTIONS.UP;
+			};break;
+
+		case App.InstCatalog.TYPES['COND TOKEN D']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				a.direction = App.DIRECTIONS.DOWN;
+			};break;
+
+		case App.InstCatalog.TYPES['COND TOKEN L']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				a.direction = App.DIRECTIONS.LEFT;
+			};break;
+
+		case App.InstCatalog.TYPES['COND TOKEN R']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				a.direction = App.DIRECTIONS.RIGHT;
+			};break;
+
+		case App.InstCatalog.TYPES['COND + U']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				if(a.tokenHeld.number > 0)
+					a.direction = App.DIRECTIONS.UP;
+			};break;
+
+		case App.InstCatalog.TYPES['COND + D']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				if(a.tokenHeld.number > 0)
+					a.direction = App.DIRECTIONS.DOWN;
+			};break;
+
+		case App.InstCatalog.TYPES['COND + L']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				if(a.tokenHeld.number > 0)
+					a.direction = App.DIRECTIONS.LEFT;
+			};break;
+
+		case App.InstCatalog.TYPES['COND + R']:
+
+			this.execute = function(a){
+				if(!a.colorFlags[this.color])return;
+				if(a.tokenHeld === undefined)return;
+				if(a.tokenHeld.number > 0)
+					a.direction = App.DIRECTIONS.RIGHT;
 			};break;
 	}
 }

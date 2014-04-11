@@ -102,7 +102,6 @@ App.GuiDragButton = function(x, y, draw, instruction, panel){
 	this.render = function(gfx){
 		// gfx.fillStyle = (this.dragged)? this.activeColor : this.inactiveColor;
 		// gfx.fillRect(this.currentX, this.currentY, this.guiCollider.w, this.guiCollider.h);
-
 		gfx.lineWidth = 2;
 		App.InstCatalog.render(
 			gfx,
@@ -196,10 +195,11 @@ App.GuiSliderButton = function(guiCollider, panel){
 		if(!this.sliderLine)
 			console.error('Improperly initialized gui slider');
 		gfx.fillStyle = this.color;
-		gfx.fillRect(this.guiCollider.getx(), this.guiCollider.gety(), this.guiCollider.w, this.guiCollider.h);
+		gfx.fillRect(this.guiCollider.getx(), this.guiCollider.gety(), 10, 10);
 
-		gfx.fillStyle = App.GuiColors.gray[0];
-		gfx.fillText (Math.floor(this.sliderLine.value), this.guiCollider.getx(), this.guiCollider.gety() + this.guiCollider.h/2);
+		gfx.fillStyle = App.GuiColors.gray[6];
+
+		// gfx.fillText(Math.floor(this.sliderLine.value), textX, this.guiCollider.gety() + this.guiCollider.h/2);
 	}
 
 	//Begins the dragging of the slider
@@ -266,8 +266,8 @@ App.GuiSliderLine = function(guiCollider, min, max, direction, callback, panel){
 	//Evaluates a new value for the slider based on the x,y coordinates of the button
 	//Also calls the change listener callback, if there is one.
 	this.evaluate = function(x, y){
-		var vals = (this.direction === 1)? {v:x, l:this.guiCollider.getx(), h:this.guiCollider.w} :
-											{v:y, l:this.guiCollider.gety(), h:this.guiCollider.h};
+		var vals = (this.direction === 1) ? { v : x, l : this.guiCollider.getx(), h : this.guiCollider.w } :
+						{v : y, l : this.guiCollider.gety(), h : this.guiCollider.h};
 		vals.v -= vals.l;
 		var step = (this.max-this.min)/vals.h;
 		vals.v *= step;

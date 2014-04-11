@@ -6,7 +6,6 @@
 4. allows switching between frames
 5. updates components in current frame that have an update method
 6. renders components in current frame that have a render method (all should)
-
 */
 App.makeGUI = function(){
 	var gui = {};

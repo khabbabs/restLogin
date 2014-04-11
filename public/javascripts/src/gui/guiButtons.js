@@ -58,8 +58,17 @@ App.GuiTextButton = function(x, y, text, callback, continuous, panel){
 		gfx.fillStyle = this.color;
 		gfx.fillRect(this.guiCollider.getx(), this.guiCollider.gety(), this.guiCollider.w, this.guiCollider.h);
 		gfx.fillStyle = App.GuiTextButton.fg;
+
 		var textX = this.guiCollider.getx() + 2;
 		var textY = this.guiCollider.gety() + (this.guiCollider.h / 2);
+
+		var text_w = gfx.measureText(this.text).width;
+
+		textX = this.guiCollider.getx() + (this.guiCollider.w/2 - text_w/2);
+
+		// there is no gfx.measureText(txt).height param so we must use font size
+		textY = this.guiCollider.gety() + this.guiCollider.h/2 + 5;
+
 		gfx.fillText(this.text, textX, textY);
 		var flair = (this.flair) ? this.flair : App.GuiTextButton.defaultFlair;
 		App.GuiTextButton.flairs[flair](gfx, this.flairColor, this.guiCollider.getx(), this.guiCollider.gety());
@@ -218,12 +227,12 @@ App.GuiPanel = function(guiCollider){
 	}
 
 }
-App.GuiPanel.rgba = 'rgba(180, 180, 180, 0.1)';
+App.GuiPanel.rgba = 'rgba(0,0,0, 0.75)';
 
 //Subclassing in JS is awful. Breaks everything. Use factories instead usually
 App.makeBlockingPanel = function(){
 	var p = new App.GuiPanel(new App.GuiCollisionRect(0,0,App.Canvases.width, App.Canvases.height));
-	p.color = 'rgba(50,50,50,0.8';
+	p.color = 'rgba(0,0,0,0.50)';
 	return p;
 }
 
@@ -297,5 +306,3 @@ App.GuiCollisionRect = function(x, y, w, h){
 
 	this.positionRelative = positionRelative;
 }
-
-

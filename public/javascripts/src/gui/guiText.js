@@ -18,9 +18,7 @@ App.GuiTextBox = function (guiCollider, text, panel) {
 	}
 }
 
-//NOT a simple text display. This bad boy is heavy weight
-//Feel free to extend/refactor this! It does, however, work pretty well,
-//and isn't very inefficient.
+//NOT a simple text display.
 App.GuiEditableTextBox = function(guiCollider, defaultText, panel){
 	this.guiCollider = guiCollider;
 	this.text = defaultText;
@@ -42,8 +40,6 @@ App.GuiEditableTextBox = function(guiCollider, defaultText, panel){
 	this.resetText = function(){
 		this.text = this.defaultText;
 	}
-
-
 
 	//Draw the text box, including cursor
 	this.render = function(gfx){

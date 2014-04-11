@@ -14,8 +14,6 @@ window.onload = function(){
 	App.setupGUI();
 	App.Engine.run();
 
-	setupTestLevel(); //temporary
-
 	App.changeMode(App.MODES.MAIN_MENU);
 	//App.changeMode(App.MODES.PLANNING);
 	//App.changeMode(App.MODES.USER_LEVEL_SELECT);

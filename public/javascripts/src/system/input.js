@@ -135,7 +135,7 @@ App.makeInputHandler = function(){
 
 		input.mouseData.wheel = (delta < 0) ? -1 : 1;
 
-		if(!input.guiControlsMouse)
+		if(!input.guiControlsMouse && !input.Gui.mouseWheel(input.mouseData))
 			input.Game.mouseWheel(input.mouseData);
 
 		input.mouseData.wheel = 0;

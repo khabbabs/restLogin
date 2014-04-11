@@ -83,7 +83,6 @@ App.PlanningLevel = function(){
 				}
 				that.groupDelete(tempList);
 			}
-			that.currentSelection = [];
 		}
 	}
 
@@ -611,31 +610,4 @@ App.PlanningLevel = function(){
 	}
 
 	this.dynamicRender = function(){}
-
-	this.dumpUndo = function(){
-		console.log('undo stack: ');
-		for(var i = 0; i < that.undoStack.length; ++i){
-			console.log(i + ' ' + that.undoStack[i].opId);
-		}	
-	}
-
-	this.dumpRedo = function(){
-		console.log('redo stack: ');
-		for(var i = 0; i < that.redoStack.length; ++i){
-			console.log(i + ' ' + that.redoStack[i].opId);
-		}	
-	}
-
-	this.dumpGrid = function(){
-		for(var i in that.grid){
-			if(that.grid[i] !== undefined)for(var j in that.grid[i]){
-				if(that.grid[i][j] !== undefined)for(var k in that.grid[i][j]){
-					if(that.grid[i][j][k]){
-						console.log('cell x,y,c: ' + i + ', ' + j + ', ' + k + ' instr x,y: ' + that.grid[i][j][k].x + ', ' + that.grid[i][j][k].y +
-							' color: ' + that.grid[i][j][k].color + ' type: ' + that.grid[i][j][k].type);
-					}
-				}
-			}
-		}
-	}
 }

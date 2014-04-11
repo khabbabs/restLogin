@@ -62,7 +62,8 @@ App.GuiTable = function(x, y, ppanel){
 		}
 		for(var o in this.table){
 			for(var k in this.table[o].entries){
-				var e = this.table[o].entries[k];
+				var entry = this.table[o].entries[k];
+				var entryWidth = gfx.measureText(entry).width;
 
 				gfx.fillStyle = (o%2 == 0) ? this.evenColor : this.oddColor;
 
@@ -75,9 +76,12 @@ App.GuiTable = function(x, y, ppanel){
 				gfx.fillRect(x, y,this.colWidth,this.rowHeight);
 
 				gfx.fillStyle = App.GuiTextButton.fg;
-				var textX = x + 2;
-				var textY = y + this.rowHeight/2;
-				gfx.fillText(e, textX, textY);
+				var textX = x + this.colWidth/2 - entryWidth/2;
+				var textY = y + this.rowHeight/2 + 5;
+
+				if (textX >= x && entryWidth < this.colWidth)
+					gfx.fillText(entry, textX, textY);
+				else gfx.fillText(entry, x + 2, textY);
 
 				gfx.fillStyle = App.GuiColors.gray[1];
 				gfx.fillRect(x-1,this.guiCollider.gety(), 1, this.guiCollider.h);
@@ -188,7 +192,7 @@ App.GuiTable.TableButton = function(x, string, table){
 	this.col = x;
 
 	this.clicked = false;
-
+	
 
 	//For continuous callbacks
 	this.update = function(){
@@ -201,9 +205,12 @@ App.GuiTable.TableButton = function(x, string, table){
 		gfx.fillStyle = this.color;
 		gfx.fillRect(this.guiCollider.getx(), this.guiCollider.gety(), this.guiCollider.w, this.guiCollider.h);
 		gfx.fillStyle = App.GuiTextButton.fg;
-		var textX = this.guiCollider.getx() + 2;
-		var textY = this.guiCollider.gety() + (this.guiCollider.h / 2);
-		gfx.fillText(this.text, textX, textY);
+		var textW = gfx.measureText(this.text).width;
+		var textX = this.guiCollider.getx() + this.guiCollider.w/2 - textW/2;
+		var textY = this.guiCollider.gety() + (this.guiCollider.h / 2) + 5;
+		if (textX > this.guiCollider.getx())
+			gfx.fillText(this.text, textX, textY);
+		else gfx.fillText(this.text, this.guiCollider.getx() + 2, textY);
 	}
 
 	//Changes the color and initiates the click

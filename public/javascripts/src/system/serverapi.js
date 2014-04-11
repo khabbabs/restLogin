@@ -38,3 +38,15 @@ App.Server.putLevel = function(levelstr, username, password,difficulty, title, d
 App.Server.testPostCallback = function(dat){
 	console.log(dat);
 }
+
+App.Server.createAccount = function(username, password, callback){
+	var u = App.Server.url + "api/postsignup";
+	if(!(username && password && callback))
+	{
+		console.error('must fully specify all arguments to createAccount!');
+		return;
+	}
+	var data = {"username":username, "password":password};
+	$.post(u, data, callback);
+}
+
