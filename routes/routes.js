@@ -59,7 +59,7 @@ module.exports = function(app, passport){
         console.log('/ post level');
         msg = req.flash('loginMessage');
         console.log(msg)
-        res.json(JSON.stringify({status :msg[0]}));
+        res.json({'status' :msg[0]});
     });
 
 //    app.post('/api/postLevel', passport.authenticate('api-postLevel', {

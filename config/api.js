@@ -21,7 +21,7 @@ module.exports.listByUser = function(req, res){
         }
         else if(!user){
             console.log("can't find user "+req.params.id);
-            return res.json(JSON.stringify({'status': req.params.id+' does not exist'}));
+            return res.json({'status': req.params.id+' does not exist'});
         }else{
                 Level.find({author_id: req.params.id},function (err, level){
                 if (err){
@@ -55,11 +55,11 @@ module.exports.postSignUp = function(req,res){
         if(err){
             console.log('error in post sign up:');
             console.log(err);
-            return res.json(JSON.stringify({'status': 'error in api.postSignUp'}));
+            return res.json({'status': 'error in api.postSignUp'});
         }
         if(user){
 
-            return res.json(JSON.stringify({'status': req.body.username+' already exist'}));
+            return res.json({'status': req.body.username+' already exist'});
 
         }
         else{
@@ -74,10 +74,10 @@ module.exports.postSignUp = function(req,res){
                         // save the user
                         newUser.save(function(err) {
                             if (err){
-                                return res.json(JSON.stringify({'status': 'error in saving username'}));      
+                                return res.json({'status': 'error in saving username'});      
                             }
                             else{
-                                return res.json(JSON.stringify({'status': req.body.username+' created'}));
+                                return res.json({'status': req.body.username+' created'});
                             }
                         });
 
@@ -99,12 +99,12 @@ module.exports.postLevel = function(req, res){
         }
         // if no user is found, return the message
         if (!user)
-            return res.json(JSON.stringify({'status': req.body.username+' does not exist'})); // req.flash is the way to set flashdata using connect-flash
+            return res.json({'status': req.body.username+' does not exist'}); // req.flash is the way to set flashdata using connect-flash
 
         // if the user is found but the password is wrong
         if (!user.validPassword(req.body.password))
             //return res.send("wrong password"); // create the loginMessage and save it to session as flashdata
-            return res.json(JSON.stringify({'status': 'Wrong Password'}));
+            return res.json({'status': 'Wrong Password'});
         // all is well, return successful user
         if (user){
             console.log("post level")
@@ -119,7 +119,7 @@ module.exports.postLevel = function(req, res){
             newlevel.save(function(err){
                 if (!err){
                     //return res.send("level saved");
-                    return res.json(JSON.stringify({'status': 'level saved'}));
+                    return res.json({'status': 'level saved'});
                 }else{
                     return res.send(err);
                 }
