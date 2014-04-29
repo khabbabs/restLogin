@@ -324,8 +324,8 @@ var Parser = (function (scope) {
 		return -a;
 	}
 
-	function random(a) {
-		return Math.random() * (a || 1);
+	function random(a,b) {
+		return App.Game.randToken(a,b);
 	}
 	function fac(a) { //a!
 		a = Math.floor(a);

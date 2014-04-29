@@ -2,153 +2,137 @@ App.makeGame = function(){
 	var game = {};
 
 	// ========================================================== //
+	// ====================== LEVEL-SPECIFIC ==================== //
+	// ========================================================== //
+
+	game.currentPlanningLevel;
+	game.currentSimulationLevel;
+
+	game.streams    = [];
+	game.inStreams  = []; // inStreams[variable] = [raw,parsed,[gives],stackPtr,color]
+	game.outStreams = []; // outStreams[variable] = [raw,parsed,[wants],stackPtr,quota,description,color]
+	game.flipFlop   = [true,true,true,true];
+
+	game.createNewLevel = function(name,width,height){
+		var lvl = new App.PlanningLevel();
+		lvl.name        = name;
+		lvl.dateCreated = new Date.getTime();
+		lvl.width       = width;
+		lvl.height      = height;
+		return lvl;
+	}
+
+	// returns undefined if the level string is invalid
+	game.parseLevel = function(str){
+		var lvl = new App.PlanningLevel();
+		if(!str)return undefined;
+		var data = str.split('~');
+		for(var i=0;i<data.length;++i)data[i] = data[i].split('`');
+		if(data.length<1)return undefined;
+		if(data[0].length!==4)return undefined;
+		lvl.name        = data[0][0];
+		lvl.dateCreated = parseInt(data[0][1]);
+		lvl.width       = parseInt(data[0][2]);
+		lvl.height      = parseInt(data[0][3]);
+		game.streams    = [];
+		game.inStreams  = [];
+		game.outStreams = [];
+		if(isNaN(lvl.dateCreated) || isNaN(lvl.width) || isNaN(lvl.height))return undefined;
+		if(lvl.width < 0 || lvl.height < 0)return undefined;
+		for(var i=1;i<data.length;++i){
+			if(data[i].length<4)return undefined;
+			var x = parseInt(data[i][0]);
+			var y = parseInt(data[i][1]);
+			var c = parseInt(data[i][2]);
+			var t = parseInt(data[i][3]);
+			var d = data[i][4];
+			if(isNaN(x) || isNaN(y) || isNaN(c) || isNaN(t))return undefined;
+			if(lvl.width  !== 0 && (x < 0 || x >= lvl.width ))return undefined;
+			if(lvl.height !== 0 && (y < 0 || y >= lvl.height))return undefined;
+			if(c < 0 || c >= 4)return undefined;
+			if(d !== undefined && game.streams[d])return undefined;
+		//	if(!lvl.insert(x,y,c,t,d))return undefined;
+			var ins = new App.PlanningInstruction(x,y,c,t,d);
+			if(!lvl.insert(ins))return undefined;
+			switch(t){ // TODO: MOVE THIS TO PLANNING LEVEL INSERT | ADD APPROPRIATE STUFF TO PLANNING LEVEL DELETE
+				case App.InstCatalog.TYPES['IN']:
+					var p = Parser.parse(data[i][5]);
+					if(p === undefined)return undefined;
+					game.inStreams[d]=[data[i][5],p,[],0,c];
+					break;
+				case App.InstCatalog.TYPES['OUT']:
+					var p = Parser.parse(data[i][5]);
+					if(p === undefined)return undefined;
+					game.outStreams[d]=[data[i][5],p,[],0,data[i][6],data[i][7],c];
+					break;
+			}game.streams[d] = true;
+		}
+
+		lvl.killUndo();
+		return lvl;
+	}
+
+		/*--------------------------------------------*/
+
+	game.loadLevel = function(levelString,mode){
+		// TODO: setup render vars (center level, default zoom)
+	}
+
+	game.loadNewLevel = function(str){
+		var level = parseLevel(str);
+		if(!level)return false;
+		this.currentPlanningLevel = level;
+		return true;
+	}
+
+	// ========================================================== //
 	// ====================== MODE-SPECIFIC ===================== //
 	// ========================================================== //
 
 		/*+------------------------------------------+*/
 
-	game.modes = {SIMULATION:App.setup.modes.SIMULATION,PLANNING:App.setup.modes.PLANNING};
+	game.modes = {PLANNING:0,SIMULATION:1};
 	game.mode = game.modes.PLANNING; // XXX: shouldnt this be setup by the initializing context
-
-	game.currentPlanningLevel;
-	game.currentSimulationLevel;
-	game.debug = false;
-
-		/*+------------------------------------------+*/
-
-	game.loadLevel = function(levelString){
-		// TODO: clear old undo-redo cache
-		// TODO: setup render vars (center level, default zoom)
-	}
 
 	game.setMode = function(mode){
 		if(mode === game.mode)return;
+		game.toggleMode();
+	}
 
-		if(! (mode === this.modes.SIMULATION || mode === this.modes.PLANNING)){
-			console.error("invalid gamemode: " + mode);
-			return;
-		}
 
-		game.mode = mode;
-		if(game.mode === game.modes.SIMULATION){
-			game.tokenSGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
-			game.tokenDGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
+	game.toggleMode = function(){
+		if(game.mode === game.modes.PLANNING){
+			game.mode = game.modes.SIMULATION;
 			game.currentSimulationLevel = game.currentPlanningLevel.generateSimulationLevel();
-			game.requestStaticRenderUpdate = true;
 			game.paused = false;
 			game.nextCycleTick = App.Engine.tick;
 			game.cycle = 0;
-			
-			// band-aid for a draw problem on mode switching
-			game.currentPlanningLevel.graphics.dynamicRender(game.tempGfx); 
-			game.currentPlanningLevel.currentSelection = [];
-			game.currentPlanningLevel.moving = false;
-			game.currentPlanningLevel.copied = false;
-			//
+			App.GameRenderer.requestStaticRenderUpdate = true;
+			game.tokenSeed = game.currentPlanningLevel.dateCreated;
+			for(var i in game.inStreams){
+				game.inStreams[i][2] = [];
+				game.inStreams[i][3] = 0;
+			}for(var i in game.outStreams){
+				game.outStreams[i][2] = [];
+				game.outStreams[i][3] = 0;
+			}game.generateTokenWave();
+			game.flipFlop = [true,true,true,true];
+
+			App.Game.currentPlanningLevel.currentSelection = [];
+			App.GameRenderer.tempGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
 		}else{
 			game.mode = game.modes.PLANNING;
 			game.currentSimulationLevel = undefined;
-			game.automGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
-			game.tokenSGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
-			game.tokenDGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
-			game.requestStaticRenderUpdate = true;
 			game.paused = true;
+			App.GameRenderer.automGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
+			App.GameRenderer.tokenSGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
+			App.GameRenderer.tokenDGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
+			App.GameRenderer.requestStaticRenderUpdate = true;
 		}
-	}
-
-		/*+------------------------------------------+*/
-
-	game.simulationError = function(errorMsg){
-		// TODO: stop simulation
-		// TODO: display error
-		// TODO: go back to planning mode
-	}
-
-	game.simulationSuccess = function(){
-		// TODO: stop simulation
-		// TODO: display scores
-		//       instruction count
-		//       ticks elapsed
-		//       automaton count (fork?) (min max total)
-		//       cell usage
-		// TODO: exit/next level...
-	}
-
-		/*+------------------------------------------+*/
-
-	// TODO: move this to planningLevel
-	// returns a planning level object, given an input string.
-	// Just a little string parser, really. If changes to
-	// Level format are made, they have to be updated here.
-	// This could be considered fragile code in need of refactoring!
-	game.loadNewLevel = function(inputString){
-		var errors = [];
-		if(!inputString || !inputString.split)
-			errors.push('   No Level!');
-		else{
-			var split = inputString.split(';');
-			var lev = new App.PlanningLevel();
-
-
-			if(split.length <= 0)
-				errors.push('  No Level!');
-
-			var levDat = split[0].split(',');
-			if(levDat.length !== 3)
-				errors.push('  Missing header information!');
-
-			lev.name = levDat[0];
-			lev.width = parseInt(levDat[1]);
-			lev.height = parseInt(levDat[2]);
-			if(isNaN(lev.width) || isNaN(lev.height))
-				errors.push('  Non-numeric width or height!');
-
-			for(var i = 1; i < split.length; i++){
-				var instDat = split[i].split(',');
-				if(instDat.length !== 4)
-					errors.push('  Missing instruction information for instruction #' + i + '!');
-
-				var x = parseInt(instDat[0]);
-				var y = parseInt(instDat[1]);
-				var col = parseInt(instDat[2]);
-				var typ = parseInt(instDat[3]);
-
-				if(isNaN(x) || isNaN(y) || isNaN(col) || isNaN(typ))
-					errors.push('  Non-numeric instruction information for instruction #' +  i +  '!');
-
-				if((x < 0 || x > lev.width) && lev.width !== 0)
-					errors.push('  Instruction x out of range for instruction #' + i + ': ' + x);
-
-				if((y < 0 || y > lev.height) && lev.height !== 0)
-					errors.push('  Instruction y out of range for instruction #' + i + ': ' + y);
-
-				// TODO: modify this to error if an instruction wasnt found in InstCatalog.TYPES
-//				if(typ >= 25)
-//					errors.push('  Instruction type out of range for instruction #' + i + ': ' + typ);
-
-				if(col >= 4)
-					errors.push('  Instruction color out of range for instruction #' + i + ': ' + col);
-
-				if(errors.length === 0){
-					var inst = new App.PlanningInstruction(x, y, col, typ);
-					lev.insert(inst);
-				}
-			}
-		}
-		if(errors.length !== 0){
-			console.error('Could not load level: ' + inputString);
-			for(var e in errors){
-				console.error(errors[e]);
-			}
-			return false;//a success/failure flag
-		}
-		lev.killUndo('New Level: Undo Cleared');
-		this.currentPlanningLevel = lev;
-		return true;
 	}
 
 	// ========================================================== //
-	// ===================== UPDATE-SPECIFIC ==================== //
+	// =================== SIMULATION-SPECIFIC ================== //
 	// ========================================================== //
 
 	game.lastCycleTick;
@@ -164,6 +148,29 @@ App.makeGame = function(){
 
 		/*+------------------------------------------+*/
 
+	game.tokenSeed;
+
+	game.randToken = function(a,b){
+		return Math.floor((Math.abs(9876413*Math.tan(++game.tokenSeed))%(b-a))+a);
+	}
+
+	game.generateTokenWave = function(){
+		var vals = [];
+		for(var i in game.inStreams){
+			var val = vals[i] = game.inStreams[i][1].evaluate();
+			if(val === undefined){
+				game.simulationError("Invalid stream input"); // XXX: CAN WE DETERMINE THIS AT LEVEL PARSE TIME
+				return;
+			}game.inStreams[i][2].push(val);
+		}for(var i in game.outStreams){
+			var val = game.outStreams[i][1].evaluate(vals);
+			if(val === undefined){
+				game.simulationError("Invalid stream output"); // XXX: CAN WE DETERMINE THIS AT LEVEL PARSE TIME
+				return;
+			}game.outStreams[i][2].push(val);
+		}
+	}
+
 	game.update = function(){
 		if(game.mode === game.modes.PLANNING &&
 		   game.currentPlanningLevel !== undefined &&
@@ -176,6 +183,17 @@ App.makeGame = function(){
 				game.nextCycleTick += game.simulationSpeed;
 				++game.cycle;
 				game.currentSimulationLevel.update();
+
+				if(Object.keys(game.outStreams).length > 0){
+					var success = false;
+					for(var i in game.outStreams){
+						if(game.outStreams[i][4] == 0)break;
+						if(game.outStreams[i][4] <= game.outStreams[i][3])
+							success = true;
+					}
+					if(success)game.simulationSuccess();
+				}
+
 				if(game.requestPause){
 					game.requestPause = false;
 					game.lastCycleTick = App.Engine.tick;
@@ -189,13 +207,6 @@ App.makeGame = function(){
 				game.nextCycleTick = game.pauseNextCycleTick+diff;
 			}
 		}
-
-		if(game.followTarget){
-			// behavior considerations when automaton wraps around level???
-			game.goalRenderX = game.followTarget.drawX + game.currentSimulationLevel.width*game.cellSize/2;
-			game.goalRenderY = game.followTarget.drawY + game.currentSimulationLevel.height*game.cellSize/2;
-			game.requestStaticRenderUpdate = true;
-		}
 	}
 
 	game.pause = function(){
@@ -204,102 +215,6 @@ App.makeGame = function(){
 		game.pauseTick = App.Engine.tick;
 		game.pauseLastCycleTick = game.lastCycleTick;
 		game.pauseNextCycleTick = game.nextCycleTick;
-	}
-
-	// ========================================================== //
-	// ===================== RENDER-SPECIFIC ==================== //
-	// ========================================================== //
-
-	game.tempGfx        = App.Canvases.addNewLayer('gameTemp'       ,0);
-	game.debugGfx       = App.Canvases.addNewLayer('debug info'     ,0);
-	game.automGfx       = App.Canvases.addNewLayer('autom'         ,-1);
-	game.tokenDGfx      = App.Canvases.addNewLayer('token dynamic' ,-2);
-	game.tokenSGfx      = App.Canvases.addNewLayer('token static'  ,-3);
-	game.instructionGfx = App.Canvases.addNewLayer('instruction'   ,-4);
-	game.gridGfx        = App.Canvases.addNewLayer('grid static'   ,-5);
-	game.bkgndGfx       = App.Canvases.addNewLayer('background'    ,-6);
-
-	game.requestStaticRenderUpdate = true;
-
-		/*+------------------------------------------+*/
-
-	game.renderX = 100;
-	game.renderY = 100;
-	game.cellSizeFactor = 4;
-	game.cellSize = 3*Math.pow(2,3);
-	game.interpolation;
-
-	game.goalRenderX = 16;
-	game.goalRenderY = 93;
-	game.goalCellSize = 3*Math.pow(2,game.cellSizeFactor);
-
-	game.panRenderX;
-	game.panRenderY;
-	game.panMouseX;
-	game.panMouseY;
-
-	game.mouseX;
-	game.mouseY;
-	game.mouseC;
-	game.renderMX = 0;
-	game.renderMY = 0;
-	game.goalMX = 0;
-	game.goalMY = 0;
-
-	game.followTarget = null;
-
-		/*+------------------------------------------+*/
-
-	game.followAutomaton = function(automaton){
-		this.followTarget = automaton;
-	}
-
-	game.constrain = function(){
-		var offset = 64;
-
-		if(game.currentPlanningLevel.width !== 0){
-			if(game.goalRenderX > App.Canvases.width-offset)
-				game.goalRenderX = App.Canvases.width-offset;
-			if(game.goalRenderX < offset-game.currentPlanningLevel.width*game.cellSize)
-				game.goalRenderX = offset-game.currentPlanningLevel.width*game.cellSize;
-		}
-
-		if(game.currentPlanningLevel.height !== 0){
-			if(game.goalRenderY > App.Canvases.height-offset)
-				game.goalRenderY = App.Canvases.height-offset;
-			if(game.goalRenderY < offset-game.currentPlanningLevel.height*game.cellSize)
-				game.goalRenderY = offset-game.currentPlanningLevel.height*game.cellSize;
-		}
-	}
-
-	game.beginPan = function(x,y){
-		game.followTarget = null;
-		game.panMouseX = x;
-		game.panMouseY = y;
-		game.panRenderX = game.goalRenderX;
-		game.panRenderY = game.goalRenderY;
-	}
-
-	game.pan = function(x,y){
-		game.goalRenderX = Math.round(game.panRenderX+(x-game.panMouseX));
-		game.goalRenderY = Math.round(game.panRenderY+(y-game.panMouseY));
-		game.constrain();
-		game.requestStaticRenderUpdate = true;
-	}
-
-	game.zoom = function(x,y,f){
-		game.cellSizeFactor += f;
-		if(game.cellSizeFactor<3)game.cellSizeFactor=3;
-		if(game.cellSizeFactor>7)game.cellSizeFactor=7;
-
-		var oldCellSize = game.goalCellSize;
-		game.goalCellSize = Math.round(3*Math.pow(2,game.cellSizeFactor));
-		var factor = game.goalCellSize/oldCellSize;
-
-		game.goalRenderX = Math.round(x+(game.goalRenderX-x)*factor);
-		game.goalRenderY = Math.round(y+(game.goalRenderY-y)*factor);
-		game.constrain();
-		game.requestStaticRenderUpdate = true;
 	}
 
 	game.setSimulationSpeed = function(speed){
@@ -318,245 +233,13 @@ App.makeGame = function(){
 		game.simulationSpeed = speed;
 	}
 
-	game.translateCanvas = function(gfx){
-		gfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
-		gfx.save();
-		gfx.translate(App.Game.renderX,App.Game.renderY);
+
+	game.simulationError = function(errorMsg){
+		App.ModeHandler.pushMode('error');
 	}
 
-	game.screenToGridCoords = function(x,y){
-		var gx = (x-game.renderX)/game.cellSize;
-		var gy = (y-game.renderY)/game.cellSize;
-		var gc = fmod(gx,1)<0.5?fmod(gy,1)<0.5?App.COLORS.RED:App.COLORS.BLUE:fmod(gy,1)<0.5?App.COLORS.GREEN:App.COLORS.YELLOW;
-
-		game.mouseX = Math.floor(gx);
-		game.mouseY = Math.floor(gy);
-		game.mouseC = gc;
-
-		game.goalMX = game.mouseX*game.cellSize;
-		game.goalMY = game.mouseY*game.cellSize;
-
-		switch(game.mouseC){
-			case App.COLORS.RED:break;
-			case App.COLORS.GREEN: game.goalMX += game.cellSize/2;break;
-			case App.COLORS.BLUE:  game.goalMY += game.cellSize/2;break;
-			case App.COLORS.YELLOW:
-				game.goalMX += game.cellSize/2;
-				game.goalMY += game.cellSize/2;
-				break;
-		}
-
-	}
-
-		/*+------------------------------------------+*/
-
-	game.expInterp = function(val,goal,speed,threshold){
-		var factor = App.Engine.elapsed*speed;
-		if(factor>1)factor=1;
-		var retVal = (goal-val)*factor;
-		if(Math.abs(val+retVal-goal)<threshold)retVal=goal-val;
-		return retVal;
-	}
-
-	game.staticRender = function(){
-		// return if no need to re-render
-		if(!game.requestStaticRenderUpdate)return;
-		game.requestStaticRenderUpdate = false;
-
-		// update interpolated view variables
-		game.renderX  += game.expInterp(game.renderX,game.goalRenderX  ,0.01,0.5);
-		game.renderY  += game.expInterp(game.renderY,game.goalRenderY  ,0.01,0.5);
-		game.cellSize += game.expInterp(game.cellSize,game.goalCellSize,0.01,0.01);
-		if(game.renderX != game.goalRenderX)		game.requestStaticRenderUpdate=true;
-		if(game.renderY != game.goalRenderY)		game.requestStaticRenderUpdate=true;
-		if(game.cellSize != game.goalCellSize)	game.requestStaticRenderUpdate=true;
-
-		// setup grid canvas
-		game.gridGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height); // TODO: OPTIMIZE THIS
-
-		// setup grid vars
-		var gw = game.currentPlanningLevel.width;
-		var gh = game.currentPlanningLevel.height;
-		var cs = game.cellSize;
-		var l = fmod(game.renderX,cs)-cs;
-		var r = App.Canvases.width+cs;
-		var t = fmod(game.renderY,cs)-cs;
-		var b = App.Canvases.height+cs;
-
-		if(gw !== 0){
-			l = Math.max(l,game.renderX);
-			r = Math.min(r,game.renderX+cs*gw);
-		}
-		if(gh !== 0){
-			t = Math.max(t,game.renderY);
-			b = Math.min(b,game.renderY+cs*gh);
-		}
-
-		// lighter overlay
-		game.gridGfx.fillStyle = 'rgba(0,0,0,0.2)';
-		game.gridGfx.fillRect(game.renderX,game.renderY,gw*cs,gh*cs);
-
-	//============================================================//
-
-		game.gridGfx.lineWidth = 6;
-		game.gridGfx.strokeStyle = '#000000';
-		game.gridGfx.beginPath();
-
-		// grid outline | if block below is modified, reflect changes here
-		for(var i=l; i<=r+1; i+=cs){
-			game.gridGfx.moveTo(i,t);
-			game.gridGfx.lineTo(i,b);
-		}for(var j=t; j<=b+1; j+=cs){
-			game.gridGfx.moveTo(l,j);
-			game.gridGfx.lineTo(r,j);
-		}for(var i=l; i<=r+1; i+=cs){
-			for(var j=t; j<=b+1; j+=cs){
-				game.gridGfx.moveTo(i-4, j);
-				game.gridGfx.lineTo(i+4, j);
-				game.gridGfx.moveTo(i, j-4);
-				game.gridGfx.lineTo(i, j+4);
-			}
-		}for(var i=l+cs/2; i<r; i+=cs){
-			for(var j=t+cs/2; j<b; j+=cs){
-				game.gridGfx.moveTo(i-4, j);
-				game.gridGfx.lineTo(i+4, j);
-				game.gridGfx.moveTo(i, j-4);
-				game.gridGfx.lineTo(i, j+4);
-				if(game.cellSize < 30) continue;
-
-				game.gridGfx.moveTo(i-7, j);
-				game.gridGfx.arc(i, j, 7, -Math.PI, Math.PI);
-			}
-		}game.gridGfx.rect(l-4, t-4, r-l+8, b-t+8);
-
-		game.gridGfx.stroke();
-
-	//============================================================//
-
-		game.gridGfx.lineWidth = 2;
-
-		// draw grid lines
-		game.gridGfx.strokeStyle = '#111111';
-		game.gridGfx.beginPath();
-
-		for(var i=l; i<=r+1; i+=cs){
-			game.gridGfx.moveTo(i,t);
-			game.gridGfx.lineTo(i,b);
-		}
-
-		for(var j=t; j<=b+1; j+=cs){
-			game.gridGfx.moveTo(l,j);
-			game.gridGfx.lineTo(r,j);
-		}
-
-		game.gridGfx.stroke();
-
-		// draw cell corners
-		game.gridGfx.strokeStyle = '#444444';
-		game.gridGfx.beginPath();
-
-		for(var i=l; i<=r+1; i+=cs){
-			for(var j=t; j<=b+1; j+=cs){
-				game.gridGfx.moveTo(i-4, j);
-				game.gridGfx.lineTo(i+4, j);
-				game.gridGfx.moveTo(i, j-4);
-				game.gridGfx.lineTo(i, j+4);
-			}
-		}
-
-		game.gridGfx.stroke();
-
-		// draw cell centers
-		game.gridGfx.strokeStyle = '#222222';
-		game.gridGfx.beginPath();
-
-		for(var i=l+cs/2; i<r; i+=cs){
-			for(var j=t+cs/2; j<b; j+=cs){
-				game.gridGfx.moveTo(i-4, j);
-				game.gridGfx.lineTo(i+4, j);
-				game.gridGfx.moveTo(i, j-4);
-				game.gridGfx.lineTo(i, j+4);
-				if(game.cellSize < 30) continue;
-
-				game.gridGfx.moveTo(i-7, j);
-				game.gridGfx.arc(i, j, 7, -Math.PI, Math.PI);
-			}
-		}
-
-		game.gridGfx.stroke();
-
-		// draw level borders
-		game.gridGfx.strokeStyle = '#888888';
-		game.gridGfx.beginPath();
-		game.gridGfx.rect(l-4, t-4, r-l+8, b-t+8);
-		game.gridGfx.stroke();
-
-	//============================================================//
-
-		// draw background and occlude level at borders
-		// TODO: OPTIMIZE THIS
-		game.bkgndGfx.strokeStyle = '#2d2d2d';
-		game.bkgndGfx.fillRect(0,0,App.Canvases.width,App.Canvases.height);
-		game.bkgndGfx.strokeStyle = '#131313';
-		game.bkgndGfx.lineWidth = 5;
-		game.bkgndGfx.beginPath();
-		for(var i=1;i<App.Canvases.width+App.Canvases.height;i+=9){
-			game.bkgndGfx.moveTo(i,0);
-			game.bkgndGfx.lineTo(0,i);
-		}game.bkgndGfx.stroke();
-
-		if(game.mode === game.modes.PLANNING && game.currentPlanningLevel !== undefined){
-			game.currentPlanningLevel.staticRender();
-			game.currentPlanningLevel.graphics.staticRender(game.tempGfx);
-		}
-		else if(game.currentSimulationLevel !== undefined){
-			game.currentSimulationLevel.staticRender();
-		}
-	}
-
-	game.dynamicRender = function(){
-		if(game.mode === game.modes.PLANNING && game.currentPlanningLevel !== undefined){
-				game.currentPlanningLevel.dynamicRender();
-				if(App.Game.mode === 'Planning'){ game.currentPlanningLevel.graphics.dynamicRender(game.tempGfx); }
-		}
-		else if(game.currentSimulationLevel !== undefined){
-			game.interpolation = (App.Engine.tick-game.lastCycleTick)/(game.nextCycleTick-game.lastCycleTick); // this is a division, NOT A COMMENT
-			game.currentSimulationLevel.dynamicRender();
-		}
-
-		game.renderDebug();
-	}
-
-	game.renderDebug = function(){
-		if(!game.debug)return;
-		game.debugGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
-
-		game.debugGfx.fillStyle = 'rgba(0,0,0,0.7)'
-		game.debugGfx.fillRect(5,5,300,81);
-
-		game.debugGfx.font = 'bold 11px arial';
-		game.debugGfx.fillStyle = '#ffffff';
-		game.debugGfx.fillText('FPS: '+Math.round(App.Engine.fps) ,11,22);
-		game.debugGfx.fillText('Cycle: '+game.cycle               ,11,33);
-		if(game.paused){
-			game.debugGfx.fillStyle = '#ff0000';
-			game.debugGfx.fillText('Speed: PAUSED',11,44);
-			game.debugGfx.fillStyle = '#ffffff';
-		}else game.debugGfx.fillText('Speed: '+game.simulationSpeed+' ms/tick',11,44);
-		game.debugGfx.fillText('Tick: '+App.Engine.tick           ,11,55);
-		game.debugGfx.fillText('Zoom: '+game.cellSizeFactor       ,11,66);
-		game.debugGfx.fillText('Mode: '+game.mode       ,11,77);
-
-		game.debugGfx.fillText('Pan X: '+game.renderX             ,132,22);
-		game.debugGfx.fillText('Pan Y: '+game.renderY             ,132,33);
-		game.debugGfx.fillText('Cell Size: '+game.cellSize        ,132,44);
-		if(game.requestStaticRenderUpdate)game.debugGfx.fillStyle = '#ff0000';
-		game.debugGfx.fillText('Static Render: '+game.requestStaticRenderUpdate,132,55);
-		game.debugGfx.fillStyle = '#ffffff';
-		var bar = 'Interpolation ';
-		for(var i=0;i<game.interpolation;i+=0.05)bar+='|';
-		game.debugGfx.fillText(bar,132,66);
-		game.debugGfx.fillText('Mouse: '+game.mouseX+','+game.mouseY+','+game.mouseC,132,77);
+	game.simulationSuccess = function(){
+		App.ModeHandler.pushMode('success');
 	}
 
 	// ========================================================== //

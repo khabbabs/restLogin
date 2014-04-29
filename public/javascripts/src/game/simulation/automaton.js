@@ -4,11 +4,9 @@ App.SimulationAutomaton = function(level,x,y,direction,color){
 
 	this.level = level;
 	this.cell = level.getCell(x,y);
-	this.gfx = App.Game.automGfx;
+	this.gfx = App.GameRenderer.automGfx;
 	this.x = x;
 	this.y = y;
-	this.drawX = 0;
-	this.drawY = 0;
 	this.direction = direction;
 	this.colorFlags = [false,false,false,false];
 	this.colorFlags[color] = true;
@@ -37,21 +35,16 @@ App.SimulationAutomaton = function(level,x,y,direction,color){
 	}
 
 	this.rFunc = function(x,y){
-		var c = App.Game.cellSize;
-		var h = App.Game.cellSize/2;
+		var c = App.GameRenderer.cellSize;
+		var h = App.GameRenderer.cellSize/2;
 
 		// interpolation adjustment
 		if(!this.wait)switch(this.direction){
-			case App.DIRECTIONS.UP    : y+=(1-App.Game.interpolation);break;
-			case App.DIRECTIONS.DOWN  : y-=(1-App.Game.interpolation);break;
-			case App.DIRECTIONS.LEFT  : x+=(1-App.Game.interpolation);break;
-			case App.DIRECTIONS.RIGHT : x-=(1-App.Game.interpolation);break;
+			case App.DIRECTIONS.UP    : y+=(1-App.GameRenderer.interpolation);break;
+			case App.DIRECTIONS.DOWN  : y-=(1-App.GameRenderer.interpolation);break;
+			case App.DIRECTIONS.LEFT  : x+=(1-App.GameRenderer.interpolation);break;
+			case App.DIRECTIONS.RIGHT : x-=(1-App.GameRenderer.interpolation);break;
 		}
-
-		//Added these so the camera can follow an automaton.
-		//Only sort of works.
-		this.drawX = x*c;
-		this.drawY = y*c;
 
 		// render token if holding one
 		if(this.tokenHeld != undefined)this.tokenHeld.dynamicRender(x*c,y*c);
@@ -65,22 +58,22 @@ App.SimulationAutomaton = function(level,x,y,direction,color){
 		// render automaton outline
 		this.gfx.lineWidth = (Math.round(Math.log(c/3)/Math.log(2)+2)-5)*2+4;
 		if(this.colorFlags[App.COLORS.RED]){
-			this.gfx.strokeStyle = '#880000';
+			this.gfx.strokeStyle = App.STROKE_COLOR[App.COLORS.RED];
 			this.gfx.beginPath();
 			this.gfx.arc(x*c+h,y*c+h,h,-Math.PI,-Math.PI/2);
 			this.gfx.stroke();
 		}if(this.colorFlags[App.COLORS.GREEN]){
-			this.gfx.strokeStyle = '#008800';
+			this.gfx.strokeStyle = App.STROKE_COLOR[App.COLORS.GREEN];
 			this.gfx.beginPath();
 			this.gfx.arc(x*c+h,y*c+h,h,-Math.PI/2,0);
 			this.gfx.stroke();
 		}if(this.colorFlags[App.COLORS.BLUE]){
-			this.gfx.strokeStyle = '#000088';
+			this.gfx.strokeStyle = App.STROKE_COLOR[App.COLORS.BLUE];
 			this.gfx.beginPath();
 			this.gfx.arc(x*c+h,y*c+h,h,Math.PI/2,Math.PI);
 			this.gfx.stroke();
 		}if(this.colorFlags[App.COLORS.YELLOW]){
-			this.gfx.strokeStyle = '#888800';
+			this.gfx.strokeStyle = App.STROKE_COLOR[App.COLORS.YELLOW];
 			this.gfx.beginPath();
 			this.gfx.arc(x*c+h,y*c+h,h,0,Math.PI/2);
 			this.gfx.stroke();
@@ -89,22 +82,22 @@ App.SimulationAutomaton = function(level,x,y,direction,color){
 		// render automaton
 		this.gfx.lineWidth = (Math.round(Math.log(c/3)/Math.log(2)+2)-5)*2;
 		if(this.colorFlags[App.COLORS.RED]){
-			this.gfx.strokeStyle = '#ff0000';
+			this.gfx.strokeStyle = App.FILL_COLOR[App.COLORS.RED];
 			this.gfx.beginPath();
 			this.gfx.arc(x*c+h,y*c+h,h,-Math.PI,-Math.PI/2);
 			this.gfx.stroke();
 		}if(this.colorFlags[App.COLORS.GREEN]){
-			this.gfx.strokeStyle = '#00ff00';
+			this.gfx.strokeStyle = App.FILL_COLOR[App.COLORS.GREEN];
 			this.gfx.beginPath();
 			this.gfx.arc(x*c+h,y*c+h,h,-Math.PI/2,0);
 			this.gfx.stroke();
 		}if(this.colorFlags[App.COLORS.BLUE]){
-			this.gfx.strokeStyle = '#0000ff';
+			this.gfx.strokeStyle = App.FILL_COLOR[App.COLORS.BLUE];
 			this.gfx.beginPath();
 			this.gfx.arc(x*c+h,y*c+h,h,Math.PI/2,Math.PI);
 			this.gfx.stroke();
 		}if(this.colorFlags[App.COLORS.YELLOW]){
-			this.gfx.strokeStyle = '#ffff00';
+			this.gfx.strokeStyle = App.FILL_COLOR[App.COLORS.YELLOW];
 			this.gfx.beginPath();
 			this.gfx.arc(x*c+h,y*c+h,h,0,Math.PI/2);
 			this.gfx.stroke();

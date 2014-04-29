@@ -1,90 +1,29 @@
 App.PlanningLevel = function(){
 	var that = this;
 
-	this.name; // name of the level
-	this.width;	this.height; // grid size
-	this.numColors = 4; // number of different colors in the game
-	this.grid = []; // grid[x][y][color] = instruction
-	this.undoStack = []; // stores operation objects that can be undone later
-	this.redoStack = []; // stores operation objects that can be redone later
-	this.opObj = new App.Operation();
-	this.redLocked = false;
-	this.greenLocked = false;
-	this.blueLocked = false;
-	this.yellowLocked = false;
+	this.name;
+	this.dateCreated;
+	this.width;
+	this.height;
+	this.grid = [];
 	this.currentSelection = [];
-	this.input = new App.PlanningControls();
-	this.graphics = new App.PlanningGraphics();
-	this.copied = false;
-	this.moving = false;
-
-	// flag that lets the operation functions know how to handle conflicts.
+	this.undoStack = [];
+	this.redoStack = [];
+	this.locks = [false, false, false, false]; // R,G,B,Y
+	this.instructionLock = false;
 	this.userOverlapSetting = 0; // 0 - reject operation, 1 - overwrite
+	this.graphics = new App.PlanningGraphics();
 
-	this.setUp = function(mX, mY, mC){ that.input.setUp(mX, mY, mC) }
-	this.setDown = function(mX, mY, mC, scrnX, scrnY){ that.input.setDown(mX, mY, mC, scrnX, scrnY); }
+	// ---------------------------------------------
 
-	this.mkey = function(){
-		if(that.currentSelection.length !== 0 && that.currentSelection[0] !== null){
-			if(that.moving){ that.moving = false; }else{ that.moving = true; }
-			App.Game.requestStaticRenderUpdate = true;
-		}
-	}
-
-	this.ckey = function(){
-		if(that.currentSelection.length !== 0 && that.currentSelection[0] !== null){
-			if(that.copied){ that.copied = false; }else{ that.copied = true; }
-			App.Game.requestStaticRenderUpdate = true;
-		}
-	}
-
-	this.doMove = function(newX, newY){
-		if(that.currentSelection.length === 1){ // move 1 instruction
-			that.move(that.currentSelection[0].x,that.currentSelection[0].y,that.currentSelection[0].color,newX,newY,1);
-		}else{ // group move
-			var tempList = [];
-			for(var i = 0; i < that.currentSelection.length; ++i){
-				tempList[i] = [];
-				tempList[i][0] = that.currentSelection[i].x;
-				tempList[i][1] = that.currentSelection[i].y;
-				tempList[i][2] = that.currentSelection[i].color;
-			}
-			that.groupMove(tempList,newX-that.currentSelection[0].x,newY-that.currentSelection[0].y);
-		}
-	}
-
-	this.doCopy = function(newX, newY){
-		if(that.currentSelection.length === 1){ // copy 1 instruction
-			that.copy(that.currentSelection[0].x,that.currentSelection[0].y,that.currentSelection[0].color,newX,newY,1);
-		}else{ // group copy
-			var tempList = [];
-			for(var i = 0; i < that.currentSelection.length; ++i){
-				tempList[i] = [];
-				tempList[i][0] = that.currentSelection[i].x;
-				tempList[i][1] = that.currentSelection[i].y;
-				tempList[i][2] = that.currentSelection[i].color;
-			}
-			that.groupCopy(tempList,newX-that.currentSelection[0].x,newY-that.currentSelection[0].y);
-		}
-	}
-
-	this.dkey = function(){
-		if(that.currentSelection.length !== 0 && that.currentSelection[0] !== null){
-			if(that.currentSelection.length === 1){ // delete 1 instruction
-				var tempInst = that.currentSelection[0];
-				that.delete(tempInst.x,tempInst.y,tempInst.color,1);
-			}else{ // group delete
-				var tempList = [];
-				for(var i = 0; i < that.currentSelection.length; ++i){
-					tempList[i] = [];
-					tempList[i][0] = that.currentSelection[i].x;
-					tempList[i][1] = that.currentSelection[i].y;
-					tempList[i][2] = that.currentSelection[i].color;
-				}
-				that.groupDelete(tempList);
-			}
-			that.currentSelection = [];
-		}
+	this.operation = function(opId, instructions, shiftX, shiftY, param, newVal, oldVal, overWrite){
+		this.opId = opId;
+		this.instructions = instructions;
+		this.shiftX = shiftX; this.shiftY = shiftY;
+		this.param = param;
+		this.newVal = newVal;
+		this.oldVal = oldVal;
+		this.overwriteInfo = overWrite;
 	}
 
 	// returns an array that can have up to four instruction for the tile at x,y
@@ -133,509 +72,420 @@ App.PlanningLevel = function(){
 		}
 	};
 
-	/*this.selectCells = function(x1, y1, c1, x2, y2, c2){
-		that.currentSelection = [];
-
-		var instructions = [];
-		var numSelected = 0;
-
-		var left = false;
-
-		var tlX = 0, tlY = 0, tlC = 0;
-		var brX = 0, brY = 0, brC = 0;
-
-		if(x1 < x2){ tlX = x1; brX = x2; } else { tlX = x2; brX = x1; left = true; }
-		if(y1 < y2){ tlY = y1; brY = y2; } else { tlY = y2; brY = y1; }
-
-		if(left){ tlC = c2; brC = c1; }else{ tlC = c1; brC = c2; }
-
-		for(var i = 0; i < (brY - tlY); ++i){
-			instructions = instructions.concat(that.selectRow(tlX, tlY+i, tlC, brC, brX - tlX));			
-		}
-
-		var numInstr = 0;
-		for(i = 0; i < instructions.length; ++i){
-			if(instructions[i] !== null && instructions[i] !== undefined){
-				that.currentSelection[numInstr] = instructions[i];
-				++numInstr;
+	this.toggleLock = function(color){
+		if(that.locks[color] === true){that.locks[color] = false; }
+		else{
+			that.locks[color] = true;
+			for(var i = 0; i < that.currentSelection.length; ++i){
+				if(that.isLocked(that.currentSelection[i].color)){ that.currentSelection.splice(i,1); i--; }
 			}
 		}
-	}*/
-
-	this.selectRow = function(x, y, c1, c2, dist){
-		var instructions = [];
-		for(var i = 0; i < dist; i++){
-			if(c1 === App.COLORS.RED || c1 === App.COLORS.GREEN){
-				for(var c = 0; c <= 1; c++){
-					if(i === 0 && c1 === App.COLORS.GREEN){ c++; }
-					if(i === dist-1 && c2 === App.COLORS.RED){ console.log('b'); break; }
-					if(that.getInstruction(x+i,y,c)){ instructions[i*2+c] = that.getInstruction(x+i,y,c); }
-				}
-			}
-			else{
-				for(var c = 2; c <= 3; c++){
-					if(i === 0 && c1 === App.COLORS.YELLOW){ c++; }
-					if(i === dist-1 && c2 === App.COLORS.BLUE){ console.log('b'); break; }
-					if(that.getInstruction(x+i,y,c)){ instructions[i*2+c] = that.getInstruction(x+i,y,c); }
-				}	
-			}
-		}
-		return instructions; 
 	}
 
-	// fills currentSelection list of all unlocked instructions in cells between the specified coordinates
-	this.selectCells = function(x1, y1, c1, x2, y2, c2){
-		instructions = [];
-		that.currentSelection = [];
-		numSelected = 0;
+	this.lockInstructions = function(){ that.instructionLock = true; }
+	this.unlockInstructions = function(){ that.instructionLock = false; }
 
-		if(x1 > x2){ var temp = x1; x1 = x2; x2 = temp; }
-		if(y1 > y2){ var temp = y1; y1 = y2; y2 = temp; }
-
-		for(y = y1; y <= y2; ++y){
-			for(x = x1; x <= x2; ++x){
-				for(c = 0; c <= 3; ++c){
-					temp = that.getInstruction(x,y,c);
-					if(temp !== null && !that.isLocked(temp.color)){ instructions[numSelected] = temp; ++numSelected; }
-				}
-			}
-		}
-		that.currentSelection = instructions;
-	}
-
-	// selects a single instruction
-	this.selectInstruction = function(x,y,c){
-		that.currentSelection = [];
-		that.currentSelection[0] = that.getInstruction(x,y,c);
-	}
-
-	// toggles the state of the specified layer lock
-	this.toggleLock = function(col){
-		if(col === App.COLORS.RED){
-			if(that.redLocked){ that.redLocked = false; } else { that.redLocked = true; }
-		}
-
-		if(col === App.COLORS.GREEN){
-			if(that.greenLocked){ that.greenLocked = false; } else { that.greenLocked = true; }
-		}
-
-		if(col === App.COLORS.BLUE){
-			if(that.blueLocked){ that.blueLocked = false; } else { that.blueLocked = true; }
-		}
-
-		if(col === App.COLORS.YELLOW){
-			if(that.yellowLocked){ that.yellowLocked = false; } else { that.yellowLocked = true; }
-		}
-	}
+	this.setLock = function(color, state){ that.locks[color] = state; }
 
 	// returns the states of the specified layer lock
-	this.isLocked = function(color){
-		if(color === App.COLORS.RED){ return that.redLocked; }
-		if(color === App.COLORS.GREEN){ return that.greenLocked; }
-		if(color === App.COLORS.BLUE){ return that.blueLocked; }
-		if(color === App.COLORS.YELLOW){ return that.yellowLocked; }
+	this.isLocked = function(color){ return that.locks[color]; }
+
+	// fills currentSelection list of all unlocked instructions in cells between the specified coordinates
+	this.selectInstructions = function(x1, y1, c1, x2, y2, c2){
+		var that = App.Game.currentPlanningLevel; // TODO wierd bug with 'that'. not sure why this was needed
+		that.currentSelection = [];
+		if(x1 === x2 && y1 === y2 && c1 === c2){ // click select
+			if(that.getInstruction(x1,y1,c1) && !that.isLocked(that.getInstruction(x1,y1,c1).color)){
+				if( (that.instructionLock && !that.getInstruction(x1,y1,c1).locked) || !that.instructionLock ){
+					that.currentSelection[0] = that.getInstruction(x1,y1,c1);
+				}
+			}
+			else{ // click in empty space - clear selection
+				that.currentSelection = [];
+			}
+		}
+		else{ //drag select
+			var p1 = that.xycToij(x1, y1, c1);
+			var p2 = that.xycToij(x2, y2, c2);
+
+			var upperLeft = [-1,-1];
+			var lowerRight = [-1,-1];
+
+			if(p1[0] < p2[0]){ upperLeft[0] = p1[0]; lowerRight[0] = p2[0]; }else{ upperLeft[0] = p2[0]; lowerRight[0] = p1[0]; }
+			if(p1[1] < p2[1]){ upperLeft[1] = p1[1]; lowerRight[1] = p2[1]; }else{ upperLeft[1] = p2[1]; lowerRight[1] = p1[1]; }
+
+			var numInstr = 0;
+			var temp;
+			for(var j = upperLeft[1]; j <= lowerRight[1]; j += .5){
+				for(var i = upperLeft[0]; i <= lowerRight[0]; i += .5){
+					temp = that.getInstruction(that.ijToxyc(i,j)[0], that.ijToxyc(i,j)[1], that.ijToxyc(i,j)[2]);
+					if(temp && !that.isLocked(temp.color)){
+						if(that.lockInstructions && !temp.locked){
+							that.currentSelection[numInstr] = temp;
+							++numInstr;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	this.validateGrid = function(){
+		for(var x in that.grid){
+			if(that.grid[x]) for(var y in that.grid[x]){
+				if(that.grid[x][y]) for(var c in that.grid[x][y]){
+					if(that.grid[x][y][c] && (('' + that.grid[x][y][c].x !== x) || ('' + that.grid[x][y][c].y !== y))){
+						/* console.log(x + ' ' + y + ' ' + c + ' : ' + that.grid[x][y][c].x + ' ' + that.grid[x][y][c].y); */
+					}
+				}
+			}
+		}
+	}
+
+	this.xycToij = function(x,y,c){
+		var coords = [x, y];
+		if(c === 1 || c === 3){ coords[0] += .5; }
+		if(c === 2 || c === 3){ coords[1] += .5; }
+		return coords;
+	}
+
+	this.ijToxyc = function(i,j){
+		var coords = [i,j];
+		if(i%1 === 0 && j%1 === 0){ coords[2] = 0; }
+		if(i%1 === .5 && j%1 === 0){ coords[2] = 1; coords[0] -= .5; }
+		if(i%1 === 0 && j%1 === .5){ coords[2] = 2; coords[1] -= .5; }
+		if(i%1 === .5 && j%1 === .5){ coords[2] = 3; coords[0] -= .5; coords[1] -= .5;}
+		return coords;
+	}
+
+	this.toList = function(x){
+
+		if(!x){ return [null]; }
+
+		if(x[0] === undefined){
+			var temp = x;
+			x = [];
+			x[0] = temp;
+		}
+		return x;
+	}
+
+	this.hasStream = function(x,y){
+		if(that.grid[x] && that.grid[x][y]){
+			for(instr in that.grid[x][y]){
+				if(that.grid[x][y][instr].type === 9 || that.grid[x][y][instr].type === 8){ return true; }
+			}
+		}
+		return false;
 	}
 
 	// this function takes a list of PlanningInstructions and inserts them into the grid
-	this.groupInsert = function(instructions){
-		for(var x = 0; x < instructions.length; x++){
-			that.insert(instructions[x]);
+	this.insert = function(instructions){
+		instructions = that.toList(instructions);
+		overwriteList = [];
+
+		for(var i in instructions){ // check that the insert can complete succesfully
+
+			if(that.width !== 0 && (instructions[i].x < 0 || instructions[i].x >= that.width)){ /* console.log('insert out of bounds'); */ return false; }
+			if(that.height !== 0 && (instructions[i].y < 0 || instructions[i].y >= that.height)){ /* console.log('insert out of bounds'); */ return false; }
+			if(that.isLocked(instructions[i].color)){ /* console.log('layer locked'); */ return; }
+			if(that.instructionLock === true && instructions[i].locked){ return; }
+			if( (instructions[i].type === 8 || instructions[i].type === 9) && that.hasStream(instructions[i].x,instructions[i].y) ){ return; }
+			if(that.getInstruction(instructions[i].x, instructions[i].y, instructions[i].color))
+			{
+				if(that.userOverlapSetting === 0){ /* console.log('tile blocked'); */ return; } // if there is a conflict in any space and overwrite is disabled, reject
+
+				// store overwrite info
+				/* console.log('overwrite'); */
+				overwriteList.push(that.getInstruction(instructions[i].x,instructions[i].y,instructions[i].color));
+			}
 		}
-		that.undoStack.push(new that.opObj.groupOp(instructions.length));
-	};
+
+		for(var i in instructions){
+			if(!that.grid[instructions[i].x]){ that.grid[instructions[i].x] = []; }
+			if(!that.grid[instructions[i].x][instructions[i].y]){ that.grid[instructions[i].x][instructions[i].y] = []; }
+			that.grid[instructions[i].x][instructions[i].y][instructions[i].color] = instructions[i];
+		}
+
+		that.undoStack.push(new that.operation('ins', instructions, null, null, null, null, null, overwriteList));
+		that.killRedo('kill redo: insert');
+		that.validateGrid();
+		App.GameRenderer.requestStaticRenderUpdate = true;
+		return true;
+	}
 
 	// this function takes a list of coordinate triplets and deletes the corresponding instructions from the grid
-	// TODO change to take list of instructions
-	this.groupDelete = function(coords){
-		for(var x = 0; x < coords.length; x++){
-			that.delete(coords[x][0],coords[x][1],coords[x][2],1);
+	this.delete = function(instructions){
+		if(that.currentSelection === []){ return; }
+		instructions = that.toList(instructions);
+		for(i in instructions){
+			if(that.isLocked(instructions[i].color)){ /* console.log('layer locked'); */ return; }
+			if(that.instructionLock === true && instructions[i].locked){ return; }
+			that.grid[instructions[i].x][instructions[i].y][instructions[i].color] = null;
 		}
-		that.undoStack.push(new that.opObj.groupOp(coords.length));
-	};
+		that.undoStack.push(new that.operation('del', instructions, null, null, null, null));
+		that.killRedo('kill redo: delete');
+		that.currentSelection = [];
+		App.GameRenderer.requestStaticRenderUpdate = true;
+		that.validateGrid();
+	}
 
 	// this function takes a list of coordinate triplets and shifts the instructions they point to by shiftX and shiftY
-	// TODO change to take list of instructions
-	this.groupMove = function(coords,shiftX,shiftY){
-		for(var x = 0; x < coords.length; x++){
-			that.move(coords[x][0],coords[x][1],coords[x][2],coords[x][0]+shiftX,coords[x][1]+shiftY);
+	// TODO overwrite
+	// TODO disallow moving outside grid boundary
+	this.move = function(instructions,shiftX,shiftY){
+
+		instructions = that.toList(instructions);
+
+		for(i in instructions){ // remove all from grid to prevent groups from overlapping themselves also update coordinates and bounds check
+			var instr = instructions[i];
+			if(that.width !== 0 && (instructions[i].x + shiftX < 0 || instructions[i].x + shiftX >= that.width)){ /* console.log('move out of bounds'); */ return; }
+			if(that.height !== 0 && (instructions[i].y + shiftY < 0 || instructions[i].y + shiftY >= that.height)){ /* console.log('move out of bounds'); */ return; }
+			if(that.instructionLock === true && instructions[i].locked){ return; }
+			that.grid[instr.x][instr.y][instr.color] = null;
+			instructions[i].x += shiftX;
+			instructions[i].y += shiftY;
 		}
-		that.undoStack.push(new that.opObj.groupOp(coords.length));
+
+		// check that no overlap
+		for(i in instructions){
+			var instr = instructions[i];
+
+			if(that.getInstruction(instr.x, instr.y, instr.color)){
+				if(that.userOverlapSetting === 0){ // reject
+					for(z in instructions){
+						instructions[z].x -= shiftX;
+						instructions[z].y -= shiftY;
+						that.grid[instructions[z].x][instructions[z].y][instructions[z].color] = instructions[z];
+					}
+					return;
+				}
+				else{ // overwrite
+					// TODO
+				}
+			}
+		}
+
+		for(i in instructions){ // place instructions
+			var instr = instructions[i];
+
+			if(!that.grid[instr.x]){ that.grid[instr.x] = []; }
+			if(!that.grid[instr.x][instr.y]){ that.grid[instr.x][instr.y] = []; }
+			that.grid[instr.x][instr.y][instr.color] = instr;
+		}
+
+		that.undoStack.push(new that.operation('mov', instructions, shiftX, shiftY, null, null));
+		that.killRedo('kill redo: move');
+		App.GameRenderer.requestStaticRenderUpdate = true;
+		that.validateGrid();
 	}
 
 	// this function takes a list of coordinate triplets and copies the instructions they point to to a new cell shiftX and shiftY away from the first
-	// TODO change to take list of instructions
-	this.groupCopy = function(coords,shiftX,shiftY){
-		for(var x = 0; x < coords.length; x++){
-			that.copy(coords[x][0],coords[x][1],coords[x][2],coords[x][0]+shiftX,coords[x][1]+shiftY);
+	// TODO overwrite
+	// TODO disallow copying outside of grid
+	this.copy = function(instructions,shiftX,shiftY){
+
+		instructions = that.toList(instructions);
+
+		// create new instructions
+		var newInstr = [];
+		for(i in instructions){
+			var instr = instructions[i];
+			if(that.instructionLock === true && instructions[i].locked){ return; }
+			newInstr[i] = new App.PlanningInstruction(instr.x+shiftX, instr.y+shiftY, instr.color, instr.type);
 		}
-		that.undoStack.push(new that.opObj.groupOp(coords.length));
-	}
 
-	// not sure we will actually need this one
-	// this function takes a list of coordinate triplets and changes the specified parameter of all of them to value
-	// TODO change to take list of instructions
-	this.groupModify = function(coords, parameter, value){
-		for(var x = 0; x < coords.length; x++){
-			that.modify(this.getInstruction(coords[x][0],coords[x][1],coords[x][2]),parameter,value);
-		}
-		that.undoStack.push(new that.opObj.groupOp(coords.length));
-	}
-
-	// this function performs a modify operation on an instruction,
-	// and creates and pushes a modifyOp object onto the undo stack.
-	// if the parameter is 'color', then this will try to move the instruction
-	// to the appropriate spot in the array.
-	this.modify = function(instruction, parameter, value, killRedo){
-		if(that.isLocked(instruction.color)){ return; } // check layer lock
-		if(!that.contains(instruction.x,instruction.y,instruction.color)){ return; } // check that the instruction to be moved exists
-
-		if(parameter === 'color'){
-			var oldColor = instruction.color;
-			if(that.getInstruction(instruction.x, instruction.y, value)){ // if there is something where the modified instruction would move to
-				that.undoStack.push(new that.opObj.modifyOp(instruction, parameter, value, instruction[parameter])); //update undo stack
-
-				// check overwrite
-				if(that.userOverlapSetting === 1){ // if necessary store overwrite information for undo / redo
-					if(that.getInstruction(newX,newY,color)){
-						that.undoStack[that.undoStack.length-1].overWritten = that.getInstruction(newX,newY,color);
-					}
-				}else{ // prevent overwrite
-					if(that.getInstruction(newX,newY,color)){ return; }
+		// check that no overlap
+		for(i in newInstr){
+			var instr = newInstr[i];
+			if(that.getInstruction(instr.x, instr.y, instr.color)){
+				if(that.userOverlapSetting === 0){ // reject
+					return;
 				}
-				
-				// update cell
-				that.grid[instruction.x][instruction.y][value] = that.grid[instruction.x][instruction.y][oldColor];
-				that.grid[instruction.x][instruction.y][oldColor] = null;
-				return;
-			} else{
-				// update cell
-				that.grid[instruction.x][instruction.y][value] = that.grid[instruction.x][instruction.y][oldColor];
-				that.grid[instruction.x][instruction.y][oldColor] = null;
-			}
-		}else{
-			that.grid[instruction.x][instruction.y][instruction.color][parameter] = value; // update instruction
-		}
-
-		that.undoStack.push(new that.opObj.modifyOp(instruction, parameter, value, instruction[parameter])); // update undo stack
-		App.Game.requestStaticRenderUpdate = true;
-		if(killRedo !== 1){ that.killRedo('mod'); }
-	}
-
-	// this function performs a copy operation on an instruction,
-	// and creates and pushes a copyOp object onto the undo stack.
-	this.copy = function(x, y, color, newX, newY, killRedo){
-		if(that.isLocked(color)){ return; } // check layer lock
-		if(!that.contains(x,y,color)){ return; } // check that the instruction to be moved exists
-
-		if(that.userOverlapSetting === 1){ // if necessary store overwrite information for undo / redo
-			if(that.getInstruction(newX,newY,color)){
-				that.undoStack[that.undoStack.length-1].overWritten = that.getInstruction(newX,newY,color);
+				else{ // overwrite
+					// TODO
+				}
 			}
 		}
-		else{ // prevent overwrite
-			if(that.getInstruction(newX,newY,color)){ return; }
+
+		for(i in newInstr){ // place instructions
+			var instr = newInstr[i];
+
+			if(!that.grid[instr.x]){ that.grid[instr.x] = []; }
+			if(!that.grid[instr.x][instr.y]){ that.grid[instr.x][instr.y] = []; }
+			that.grid[instr.x][instr.y][instr.color] = instr;
 		}
 
-		// update undo stack
-		that.undoStack.push(new that.opObj.copyOp(that.getInstruction(x,y,color), newX, newY));
-
-		// update grid and instruction
-		if(!that.grid[newX]){ that.grid[newX] = []; }
-		if(!that.grid[newX][newY]){ that.grid[newX][newY] = []; }
-		that.grid[newX][newY][color] = new App.PlanningInstruction(newX, newY, color, that.grid[x][y][color].type);
-
-		App.Game.requestStaticRenderUpdate = true; // ask for static render
-
-		if(killRedo !== 1){ that.killRedo('cpy'); }
+		that.undoStack.push(new that.operation('cpy', instructions, shiftX, shiftY, null, null));
+		that.killRedo('kill redo: move');
+		App.GameRenderer.requestStaticRenderUpdate = true;
+		that.validateGrid();
 	}
 
-	// this function, performs a move operation on an instruction,
-	// and creates and pushes a moveOp object onto the undo stack.
-	this.move = function(x, y, color, newX, newY, killRedo){
-		if(that.isLocked(color)){ return; } // check layer lock
-		if(!that.contains(x,y,color)){ return; } // check that the instruction to be moved exists
+	// TODO
+	// this function takes a list of coordinate triplets and changes the specified parameter of all of them to value
+	this.modify = function(instructions, parameter, value){}
 
-		// update instruction x, y 
-		that.grid[x][y][color].x = newX;
-		that.grid[x][y][color].y = newY;
-
-		that.undoStack.push(new that.opObj.moveOp(that.getInstruction(x,y,color), x, y, newX, newY)); // update undo stack
-
-		if(that.userOverlapSetting === 1){ // if necessary store overwrite information for undo / redo
-			if(that.getInstruction(newX,newY,color)){
-				that.undoStack[that.undoStack.length-1].overWritten = that.getInstruction(newX,newY,color);
-			}
-		}
-		else{ // prevent overwrite
-			if(that.getInstruction(newX,newY,color)){ return; }
-		}
-
-		// update grid
-		if(!that.grid[newX]){ that.grid[newX] = []; }
-		if(!that.grid[newX][newY]){ that.grid[newX][newY] = []; }
-		that.grid[newX][newY][color] = that.grid[x][y][color];
-		that.grid[x][y][color] = null;
-
-		App.Game.requestStaticRenderUpdate = true; // ask for static render
-
-		if(killRedo !== 1){ that.killRedo('mov'); }	
-	}
-
-	// this function performs an insert operation on the grid,
-	// and creates and pushes an insertOp object onto the undo stack.
-	this.insert = function(instruction,killRedo){
-		if(that.isLocked(instruction.color)){ return; } // check if color is locked
-		
-		if(that.userOverlapSetting === 1){ // if necessary store overwrite information for undo / redo
-			if(that.getInstruction(instruction.x,instruction.y,instruction.color)){
-				that.undoStack[that.undoStack.length-1].overWritten = that.getInstruction(instruction.x,instruction.y,instruction.color);
-			}
-		}
-		else{ // prevent overwrite
-			if(that.getInstruction(instruction.x,instruction.y,instruction.color)){ return; }
-		}
-
-		that.undoStack.push(new that.opObj.insertOp(instruction)); // update undo stack
-
-		// update grid
-		if(!that.grid[instruction.x]){ that.grid[instruction.x] = []; }
-		if(!that.grid[instruction.x][instruction.y]){ that.grid[instruction.x][instruction.y] = []; }
-		that.grid[instruction.x][instruction.y][instruction.color] = instruction;
-
-		App.Game.requestStaticRenderUpdate = true; // ask for static render
-
-		if(killRedo !== 1){ that.killRedo('ins'); }		
-	}
-
-	// this function performs a delete operation on an instruction,
-	// it also creates and pushes a deleteOp object onto the stack
-	this.delete = function(x,y,color,killRedo){
-
-		if(that.isLocked(color)){ return; }
-		if(that.getInstruction(x,y,color)){
-
-			// update undo stack
-			if(killRedo !== 1){ that.killRedo('del'); }
-			that.undoStack.push(new that.opObj.deleteOp(that.getInstruction(x,y,color)));
-
-			// update grid
-			that.grid[x][y][color] = null;
-			App.Game.requestStaticRenderUpdate = true;
-		}
-	};
-
-	// TODO figure out how undo / redo will work with locked layers.
 	// each call to this function pops the undo stack, and undoes whatever operation it finds
-	this.undo = function(killRedo){
-		if(that.undoStack.length === 0) return;
-
-		// update stacks
+	this.undo = function(){
 		var op = that.undoStack.pop();
-		if(op.opId !== 'group'){ that.redoStack.push(op); }
+		if(op === undefined){ return; }
+		if(op.opId === 'ins'){
+			for(i in op.instructions){
+				var x = op.instructions[i].x;
+				var y = op.instructions[i].y;
+				var c = op.instructions[i].color;
 
-		console.warn('undo op: ' + op.opId);
+				if(op.overwriteInfo[i] === undefined || op.overwriteInfo[i] === null){
+					that.grid[x][y][c] = null;
+				}
+				else{
+					that.grid[x][y][c] = op.overwriteInfo[i];
+				}
 
-		// update grid
-		if(op.opId === 'insert'){
-
-			that.delete(op.instruction.x, op.instruction.y, op.instruction.color,1);
-			that.undoStack.pop();
-
-			if(op.overWritten !== null){
-				that.insert(op.overWritten,1);
-				that.undoStack.pop();
+				that.redoStack.push(op); /////////////////////////////////////////////////// should be outside the loop?
 			}
 		}
-		else if(op.opId === 'delete'){
-			that.insert(op.instruction,1);
-			that.undoStack.pop();
-		}
-		else if(op.opId === 'move'){
-			that.move(op.instruction.x, op.instruction.y, op.instruction.color, op.oldX, op.oldY, 1)
-			that.undoStack.pop();
+		else if(op.opId === 'del'){
+			for(i in op.instructions){
+				var x = op.instructions[i].x;
+				var y = op.instructions[i].y;
+				var c = op.instructions[i].color;
 
-			if(op.overWritten !== null){
-				that.insert(op.overWritten,1);
-				that.undoStack.pop();
+				that.grid[x][y][c] = op.instructions[i];
+				that.redoStack.push(op);
 			}
 		}
-		else if(op.opId === 'copy'){
-			that.delete(op.newX, op.newY, op.instruction.color, 1);
-			that.undoStack.pop();
+		else if(op.opId === 'mov'){
+			for(i in op.instructions){
+				var x = op.instructions[i].x;
+				var y = op.instructions[i].y;
+				var c = op.instructions[i].color;
 
-			if(op.overWritten !== null){
-				that.insert(op.overWritten, 1);
-				that.undoStack.pop();
+				that.grid[x-op.shiftX][y-op.shiftY][c] = op.instructions[i];
+				that.grid[x-op.shiftX][y-op.shiftY][c].x -= op.shiftX;
+				that.grid[x-op.shiftX][y-op.shiftY][c].y -= op.shiftY;
+				that.grid[x][y][c] = null;
+				that.redoStack.push(op);
 			}
 		}
-		else if(op.opId === 'modify'){
-			that.modify(op.instruction, op.parameter, op.oldValue, 1);
-			that.undoStack.pop();
+		else if(op.opId === 'cpy'){
+			for(i in op.instructions){
+				var x = op.instructions[i].x;
+				var y = op.instructions[i].y;
+				var c = op.instructions[i].color;
 
-			if(op.overWritten !== null){
-				that.insert(op.overWritten, 1);
-				that.undoStack.pop();
+				that.grid[x+op.shiftX][y+op.shiftY][c] = null;
+				that.redoStack.push(op);
 			}
 		}
-		else if(op.opId === 'group'){
-			for(var x = 0; x < op.numInstructions; x++){
-				that.undo(1);
-			}
-			that.redoStack.push(op);
-		}
-		App.Game.requestStaticRenderUpdate = true;
+		App.GameRenderer.requestStaticRenderUpdate = true;
+		that.validateGrid();
 	};
-
-	this.killRedo = function(str){ that.redoStack = []; console.warn('killRedo: ' + str); };
-	this.killUndo = function(str){ that.undoStack = []; console.warn('killUndo: ' + str); };
 
 	// each call to this function pops the redo stack, and undoes whatever operation it finds
 	this.redo = function(){
-
-		if(that.redoStack.length === 0) return;
-
-		// update stacks
 		var op = that.redoStack.pop();
-		if(op.opId !== 'group'){ that.undoStack.push(op); }
+		if(op === undefined){ return; }
+		if(op.opId === 'ins'){
+			for(i in op.instructions){
+				var x = op.instructions[i].x;
+				var y = op.instructions[i].y;
+				var c = op.instructions[i].color;
 
-		console.warn('redo op: ' + op.opId);
-
-		// update grid
-		if(op.opId === 'insert'){
-			that.insert(op.instruction,1);
-			that.undoStack.pop();
-		}
-		else if(op.opId === 'delete'){
-			that.delete(op.instruction.x, op.instruction.y, op.instruction.color,1);
-			that.undoStack.pop();
-		}
-		else if(op.opId === 'move'){
-			that.move(op.oldX, op.oldY, op.instruction.color, op.newX, op.newY, 1);
-			that.undoStack.pop();
-		}
-		else if(op.opId === 'copy'){
-			that.insert(new App.PlanningInstruction(op.newX, op.newY, op.instruction.color, op.instruction.type),1);
-			that.undoStack.pop();
-		}
-		else if(op.opId === 'modify'){
-			that.modify(op.instruction, op.parameter, op.newValue,1);
-			that.undoStack.pop();
-		}
-		else if(op.opId === 'group'){ // TODO make it so that group ends up on the front of the stack
-			for(var x = 0; x < op.numInstructions; x++){
-				that.redo();
-			}
-			that.undoStack.push(op);
-		}
-		App.Game.requestStaticRenderUpdate = true;
-	};
-
-	// TODO it sounds like we may want to include the level title in the string?
-	this.generateParseString = function(){
-		var strings = [];
-		strings.push(this.name + ',' + this.width + ',' + this.height);
-
-		for(var i in this.grid){
-			for(var j in this.grid[i]){
-				for(var c in this.grid[i][j]){
-					var inst = this.grid[i][j][c];
-					if(inst !== null){
-						strings.push(inst.x + ',' + inst.y + ',' + inst.color + ',' + inst.type); // should there be a semicolon? the next x will be appended to the the type of the preceding instruction
-					}
-				}
+				that.grid[x][y][c] = op.instructions[i];
+				that.undoStack.push(op);
 			}
 		}
+		else if(op.opId === 'del'){
+			for(i in op.instructions){
+				var x = op.instructions[i].x;
+				var y = op.instructions[i].y;
+				var c = op.instructions[i].color;
 
-		return strings.join(';');
-	};
+				that.grid[x][y][c] = null;
+				that.undoStack.push(op);
+			}
+		}
+		else if(op.opId === 'mov'){
+			for(i in op.instructions){
+				var x = op.instructions[i].x;
+				var y = op.instructions[i].y;
+				var c = op.instructions[i].color;
 
-	// return a simulation level with instructions from the grid
+				that.grid[x+op.shiftX][y+op.shiftY][c] = op.instructions[i];
+				that.grid[x+op.shiftX][y+op.shiftY][c].x += op.shiftX;
+				that.grid[x+op.shiftX][y+op.shiftY][c].y += op.shiftY;
+				that.grid[x][y][c] = null;
+				that.undoStack.push(op);
+			}
+		}
+		else if(op.opId === 'cpy'){
+			for(i in op.instructions){
+				var x = op.instructions[i].x;
+				var y = op.instructions[i].y;
+				var c = op.instructions[i].color;
+
+				that.grid[x+op.shiftX][y+op.shiftY][c] = op.instructions[i];
+				that.undoStack.push(op);
+			}
+		}
+		App.GameRenderer.requestStaticRenderUpdate = true;
+		that.validateGrid();
+	}
+
+	this.killUndo = function(str){ that.undoStack = []; /* console.log(str); */ }
+	this.killRedo = function(str){ that.redoStack = []; /* console.log(str); */ }
+
+
+
 	this.generateSimulationLevel = function(){
-		var newLevel = new App.SimulationLevel(that.width, that.height);
-		for(var i in that.grid){
-			for(var j in that.grid[i]){
-				for(var c in that.grid[i][j]){
-					var ins = that.getInstruction(i,j,c);
-					if(ins){
-						new App.SimulationInstruction(newLevel,ins.x,ins.y,ins.color,ins.type);
-					}
-				}
-			}
-		}
-		return newLevel;
+		var level = new App.SimulationLevel(this.width,this.height);
+		for(var i in this.grid)
+		for(var j in this.grid[i])
+		for(var c in this.grid[i][j]){
+			var ins = this.grid[i][j][c];
+			if(ins)new App.SimulationInstruction(level,ins.x,ins.y,ins.color,ins.type,ins.data);
+		}return level;
 	};
+
+	this.generateParseString = function(){
+		var str = [];
+		str.push(this.name+'`'+this.dateCreated+'`'+this.width+'`'+this.height);
+		for(var i in this.grid)
+		for(var j in this.grid[i])
+		for(var c in this.grid[i][j])
+		if(this.grid[i][j][c])
+			str.push(i+'`'+j+'`'+c+'`'+this.grid[i][j][c].type);
+		return str.join('~');
+	};
+
+		// ---------------------------------------------
 
 	this.staticRender = function(){
-		var selected;
-		var cs = App.Game.cellSize;
-		App.Game.translateCanvas(App.Game.instructionGfx);
-		App.Game.instructionGfx.lineWidth = 2;
+		var cs = App.GameRenderer.cellSize;
 		for(var c=0;c<4;++c){
-			App.Game.instructionGfx.save();
+			App.GameRenderer.instructionGfx.save();
 			switch(c){
-				case 0:
-					App.Game.instructionGfx.fillStyle = '#ff0000';
-					App.Game.instructionGfx.translate(0,0);
-					break;
-				case 1:
-					App.Game.instructionGfx.fillStyle = '#00ff00';
-					App.Game.instructionGfx.translate(cs/2,0);
-					break;
-				case 2:
-					App.Game.instructionGfx.fillStyle = '#0000ff';
-					App.Game.instructionGfx.translate(0,cs/2);
-					break;
-				case 3:
-					App.Game.instructionGfx.fillStyle = '#ffff00';
-					App.Game.instructionGfx.translate(cs/2,cs/2);
-					break;
+				case 0:App.GameRenderer.instructionGfx.translate(0,0);break;
+				case 1:App.GameRenderer.instructionGfx.translate(cs/2,0);break;
+				case 2:App.GameRenderer.instructionGfx.translate(0,cs/2);break;
+				case 3:App.GameRenderer.instructionGfx.translate(cs/2,cs/2);break;
 			}
 
-			for(var i in that.grid)
-				for(var j in that.grid[i])
-					if(that.grid[i][j][c]){
-						selected = false;
-						if(that.currentSelection.indexOf(that.getInstruction(i,j,c)) != -1){
-							selected = true;
-						}
-
-						App.InstCatalog.render(
-							App.Game.instructionGfx,
-							that.grid[i][j][c].type,
-							i*cs,j*cs,c,cs/2);
-					}
-
-			App.Game.instructionGfx.restore();
-		}
-		App.Game.instructionGfx.restore();
-	}
-
-	this.dynamicRender = function(){}
-
-	this.dumpUndo = function(){
-		console.log('undo stack: ');
-		for(var i = 0; i < that.undoStack.length; ++i){
-			console.log(i + ' ' + that.undoStack[i].opId);
-		}	
-	}
-
-	this.dumpRedo = function(){
-		console.log('redo stack: ');
-		for(var i = 0; i < that.redoStack.length; ++i){
-			console.log(i + ' ' + that.redoStack[i].opId);
-		}	
-	}
-
-	this.dumpGrid = function(){
-		for(var i in that.grid){
-			if(that.grid[i] !== undefined)for(var j in that.grid[i]){
-				if(that.grid[i][j] !== undefined)for(var k in that.grid[i][j]){
-					if(that.grid[i][j][k]){
-						console.log('cell x,y,c: ' + i + ', ' + j + ', ' + k + ' instr x,y: ' + that.grid[i][j][k].x + ', ' + that.grid[i][j][k].y +
-							' color: ' + that.grid[i][j][k].color + ' type: ' + that.grid[i][j][k].type);
-					}
+			for(var i in this.grid)
+			for(var j in this.grid[i]){
+				var ins = this.grid[i][j][c];
+				if(ins){
+					var streamBkg = false;
+					if(ins.type === App.InstCatalog.TYPES['IN'] || ins.type === App.InstCatalog.TYPES['OUT'])streamBkg = true;
+					App.InstCatalog.render(App.GameRenderer.instructionGfx,ins.type,ins.x*cs,ins.y*cs,ins.color,cs/2,ins.data,streamBkg);
 				}
 			}
+
+			App.GameRenderer.instructionGfx.restore();
 		}
 	}
+
+	this.dynamicRender = function(){ that.graphics.dynamicRender(App.GameRenderer.tempGfx); }
 }
