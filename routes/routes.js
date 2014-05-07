@@ -81,6 +81,10 @@ module.exports = function(app, passport){
         return api.putScore(req,res);
     });
 
+    app.put('/api/levels/updatePlayCount/:id', function(req,res){        
+        return api.upDatePlayCount(req,res);
+    });
+
 
     // app.options('/api/levels/user/:id', function(req, res){
 

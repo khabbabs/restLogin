@@ -80,11 +80,33 @@ module.exports.postSignUp = function(req,res){
                                 return res.json({'status': req.body.username+' created'});
                             }
                         });
-
         }
 
     });
 
+}
+
+module.exports.upDatePlayCount = function(req,res){
+    
+    Level.findById(req.params.id, function(err, level){
+        if(err){
+            return res.json({'status': 'error updating play count: '+err});
+        }
+        else{
+
+            level.playCount = (parseInt(level.playCount)+1).toString()
+            // return res.json(level)ArrayBuffer();
+
+            level.save(function(err){
+                if(err){
+                    return res.json({'status': 'error saving level, updating play count: '+err});
+                }else{
+                  return res.json({'status': 'updated play count: '});  
+                }
+            });
+        }
+
+    });
 }
 
 module.exports.putScore = function(req,res){
@@ -113,7 +135,7 @@ module.exports.putScore = function(req,res){
             score.save(function(err){
                 if(err){
                     return res.json({'status':'score Update error: '+err})
-                }else{
+                }else{  
                     return res.json({'status':'score update success'}) 
                 }
             });
@@ -148,7 +170,8 @@ module.exports.postLevel = function(req, res){
                 description: req.body.description,
                 difficulty: req.body.difficulty,
                 author_id: req.body.username,
-                level_str: req.body.level_str
+                level_str: req.body.level_str,
+                playCount: "0"
             });
 
             newlevel.save(function(err){

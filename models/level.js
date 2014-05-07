@@ -32,7 +32,12 @@ var levelSchema = new mongoose.Schema({
     created: {
         type: Date,
         default: Date.now()
+    },
+
+    playCount: {
+      type: String
     }
+
 
 });
 
