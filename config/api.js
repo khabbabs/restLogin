@@ -109,6 +109,24 @@ module.exports.upDatePlayCount = function(req,res){
     });
 }
 
+
+
+
+module.exports.getScore = function(req,res){    
+    Score.findOne({'levelId': req.params.id}, function(err, score){
+
+        if(err){
+            return res.json({'status': 'error getting score: '+err});
+        }
+        else{
+            // console.log('in post score');
+            return res.json({"autoCount":score.autoCount,"instruCount":score.instruCount
+                                ,"cellCount":score.cellCount,"tickCount":score.tickCount})
+        }
+    });
+    
+}
+
 module.exports.putScore = function(req,res){
     // Level.findById(req.params.id, function(err, level){
     //     if(err){

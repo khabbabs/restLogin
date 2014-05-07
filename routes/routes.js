@@ -77,9 +77,14 @@ module.exports = function(app, passport){
         return api.postSignUp(req,res);
     });
     
-    app.put('/api/score/:id', function(req,res){        
+    app.put('/api/levels/upDateScore/:id', function(req,res){        
         return api.putScore(req,res);
     });
+
+    app.get('/api/levels/getScore/:id', function(req,res){        
+        return api.getScore(req,res);
+    });
+
 
     app.put('/api/levels/updatePlayCount/:id', function(req,res){        
         return api.upDatePlayCount(req,res);
