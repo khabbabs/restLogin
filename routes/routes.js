@@ -77,6 +77,9 @@ module.exports = function(app, passport){
         return api.postSignUp(req,res);
     });
     
+    app.put('/api/score/:id', function(req,res){        
+        return api.putScore(req,res);
+    });
 
 
     // app.options('/api/levels/user/:id', function(req, res){
@@ -95,5 +98,7 @@ module.exports = function(app, passport){
     app.get('/api/levels/diff/:Difftype', function(req, res){
         return api.listByDiffType(req,res);
     });
+
+
 
 }

@@ -19,8 +19,16 @@ var scoreSchema = new mongoose.Schema({
         default: Date.now()
     },
 
+    levelId:{ 
+        type: String,
+        required: true
+    },
 
-    levelId: mongoose.Schema.ObjectId
+    autoCount:[{ _id:false, name: String , score: String}],
+    instruCount:[{ _id:false, name: String , score: String}],
+    cellCount:[{ _id:false, name: String , score: String}],
+    tickCount:[{ _id:false, name: String , score: String}]
+
 
 
 });

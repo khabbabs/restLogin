@@ -148,7 +148,7 @@ module.exports = function(passport) {
 
                 // all is well, return successful user
                 if (user){
-                    console.log("post level")
+                    console.log("post level");
                     var newlevel = Level({
                         title: req.body.title,
                         description: req.body.description,
@@ -156,6 +156,7 @@ module.exports = function(passport) {
                         author_id: username,
                         level_str: req.body.level_str
                     });
+                    
 
                     newlevel.save(function(err){
                         if (!err){

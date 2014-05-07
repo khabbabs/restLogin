@@ -5,7 +5,7 @@
 
 var Level = require('../models/level');
 var User = require('../models/user');
-
+var Score = require('../models/score');
 
 
 
@@ -87,8 +87,43 @@ module.exports.postSignUp = function(req,res){
 
 }
 
-module.exports.postLevel = function(req, res){
+module.exports.putScore = function(req,res){
+    // Level.findById(req.params.id, function(err, level){
+    //     if(err){
+    //         return res.json({'status' : 'error in put score'})
+    //     }
+    //     console.log('Update Score');
+    //     return res.json({'status' : level })
 
+    // });
+
+    Score.findOne({'levelId': req.params.id}, function(err, score){
+
+        if(err){
+            return res.json({'status': 'error getting score: '+err});
+        }
+        else{
+            console.log('in post score');
+            console.log(req.body);
+            score.autoCount.push({name:req.body.name, score: req.body.autoCount});
+            score.instruCount.push({name:req.body.name,score: req.body.instruCount});
+            score.cellCount.push({name:req.body.name, score:req.body.cellCount});
+            score.tickCount.push({name:req.body.name, score:req.body.tickCount});
+
+            score.save(function(err){
+                if(err){
+                    return res.json({'status':'score Update error: '+err})
+                }else{
+                    return res.json({'status':'score update success'}) 
+                }
+            });
+            // return res.json(score)
+        }
+    });
+    
+}
+
+module.exports.postLevel = function(req, res){
 
     User.findOne({ 'local.username' :  req.body.username }, function(err, user) {
         // if there are any errors, return the error before anything else
@@ -107,7 +142,7 @@ module.exports.postLevel = function(req, res){
             return res.json({'status': 'Wrong Password'});
         // all is well, return successful user
         if (user){
-            console.log("post level")
+            console.log("saving level")
             var newlevel = Level({
                 title: req.body.title,
                 description: req.body.description,
@@ -119,11 +154,30 @@ module.exports.postLevel = function(req, res){
             newlevel.save(function(err){
                 if (!err){
                     //return res.send("level saved");
-                    return res.json({'status': 'level saved'});
+                    
+                
+                    var newScore = Score({
+                        author_id: req.body.username,
+                        levelId: newlevel.levelId,
+                        levelName: req.body.title
+
+                    });
+
+                    newScore.save(function(err){
+                        if(!err){
+                            return res.json({'status': 'level saved'});
+                        }
+                        else{
+                            return res.json({'status': 'error while saving level' + err});
+                        }
+                    });
+
                 }else{
                     return res.send(err);
                 }
             });
+
+
         //return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username+" status: "+retMsg));
         }
         //return done(null, user,req.flash('loginMessage','logged in succesfully as: '+user.local.username));
