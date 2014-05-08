@@ -114,14 +114,20 @@ module.exports.upDatePlayCount = function(req,res){
 
 module.exports.getScore = function(req,res){    
     Score.findOne({'levelId': req.params.id}, function(err, score){
-
         if(err){
             return res.json({'status': 'error getting score: '+err});
         }
         else{
-            // console.log('in post score');
-            return res.json({"autoCount":score.autoCount,"instruCount":score.instruCount
+            console.log('in post score');
+            if (score == null){
+                return res.json({'status': 'no such level '});       
+            }else{
+                return res.json({"autoCount":score.autoCount,"instruCount":score.instruCount
                                 ,"cellCount":score.cellCount,"tickCount":score.tickCount})
+            }
+            // return res.json({"autoCount":score.autoCount,"instruCount":score.instruCount
+                                // ,"cellCount":score.cellCount,"tickCount":score.tickCount})
+            // return res.json(score)
         }
     });
     
@@ -143,6 +149,8 @@ module.exports.putScore = function(req,res){
             return res.json({'status': 'error getting score: '+err});
         }
         else{
+
+            if(score != null){
             console.log('in post score');
             console.log(req.body);
             score.autoCount.push({name:req.body.name, score: req.body.autoCount});
@@ -156,7 +164,12 @@ module.exports.putScore = function(req,res){
                 }else{  
                     return res.json({'status':'score update success'}) 
                 }
-            });
+                });
+            }
+            else{
+                return res.json({'status': 'no such score '});
+            }
+
             // return res.json(score)
         }
     });
