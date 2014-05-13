@@ -40,6 +40,7 @@ g.Component = function(x, y, w, h, enterDelay, exitDelay, xorigin, yorigin){
 	this.dointerp        = true;
 	this.ignoreCollide   = false;
 	this.ignoreHover     = false;
+	this.refuseOthers    = false;
 
 	this.baseColor       = '#ffffff';
 	this.baseTextColor   = '#000000';

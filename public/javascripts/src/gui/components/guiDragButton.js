@@ -18,6 +18,8 @@ App.GuiInstDrag = function(x, y, delay, instruction, dirsens, xorigin, yorigin, 
 
 	delete(this.renderLayers['Drag']);
 	this.renderLayers['Inst'] = function(gfx){
+		if(that.islocked())
+			return;
 		gfx.lineWidth = 2;
 
 		var interp = (that.interpmode === 'exit') ?
@@ -33,24 +35,25 @@ App.GuiInstDrag = function(x, y, delay, instruction, dirsens, xorigin, yorigin, 
 			that.instruction,
 			that.getx()-1, that.gety()-1,
 			App.GuiInstDrag.globalColor,
-			that.w+2);
+			that.w+2,
+			that.data);
 
 		if(that.hovering){
 			var w = textWidth(gfx, that.tooltip, 24-6, -2);
 			gfx.fillStyle = App.FILL_COLOR[App.GuiInstDrag.globalColor];
 			gfx.fillRect(that.getx(), App.Canvases.height-103-24, w+6, 24);
 			w = textWidth(gfx, that.hotkey, 24-6, -2);
-			gfx.fillRect(App.Canvases.width/2-394, App.Canvases.height-103-24, w+6, 24);
+
 			gfx.fillStyle = '#000000';
 			text(gfx, that.tooltip, that.getx() + 3, App.Canvases.height-103-21, 24-6, -2);
-
-
-			text(gfx, that.hotkey, App.Canvases.width/2-391, App.Canvases.height-103-21, 24-6, -2);
 		}
+	}
+	this.islocked = function(){
+		return App.GuiInstDrag.lockedInstructions.indexOf(this.instruction) != -1;
 	}
 
 	this.subClickStart = function(){
-		if(App.Game.currentPlanningLevel.locks[App.GuiInstDrag.globalColor]){
+		if(App.Game.currentPlanningLevel.locks[App.GuiInstDrag.globalColor] || this.islocked()){
 			this.preventDrag = true;
 			return;
 		}
@@ -58,6 +61,7 @@ App.GuiInstDrag = function(x, y, delay, instruction, dirsens, xorigin, yorigin, 
 		if(this.instruction >=4 && this.instruction <= 7)
 			App.GuiInstDrag.changeDirection(this.instruction-4);
 		this.ignoreHover = true;
+		this.gui.blocking = this;
 	};
 
 	//The drag part of 'drag and drop'
@@ -100,8 +104,8 @@ App.GuiInstDrag = function(x, y, delay, instruction, dirsens, xorigin, yorigin, 
 
 		//TODO make instructino update based on direction if applicable
 		var t = this.instruction;
-		console.log('dragged to ' + nx + ',' + ny);
-		App.Game.currentPlanningLevel.insert(new App.PlanningInstruction(nx,ny,c,t));
+		var instruction = new App.PlanningInstruction(nx,ny,c,t);
+		App.Game.currentPlanningLevel.insert(instruction);
 	}
 
 	App.GuiInstDrag.registry.push(this);
@@ -113,6 +117,7 @@ App.GuiInstDrag.registry = [];
 App.GuiInstDrag.globalColor = 0;
 App.GuiInstDrag.colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00'];
 App.GuiInstDrag.direction = 0;
+App.GuiInstDrag.lockedInstructions = [];
 App.GuiInstDrag.changeGlobalColor = function(color){
 	this.globalColor = color;
 	for(var i = 0; i < this.registry.length; i++){
@@ -129,3 +134,8 @@ App.GuiInstDrag.changeDirection = function(dir){
 	}
 }
 
+App.GuiInstDrag.lockAll = function(){
+	for(var i = 0; i < this.registry.length; i++){
+
+	}
+}

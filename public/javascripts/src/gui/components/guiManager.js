@@ -8,6 +8,7 @@ App.guiFrame = function(gfx){
 	this.gfx = gfx;
 	this.frame = [];
 	this.lastActive = null;
+	this.blocking = null;
 
 	//gets reset after one frame.
 	var that = this;
@@ -25,6 +26,8 @@ App.guiFrame = function(gfx){
 	}
 
 	this.addComponent = function(comp){
+		if(this.frame.indexOf(comp) > -1) return;
+
 		this.frame.push(comp);
 		comp.gui = this;
 	}
@@ -70,8 +73,11 @@ App.guiFrame = function(gfx){
 
 		for(var fn in comps.f){
 			if(comps.f[fn].locked) continue;
-			comps.f[fn].clickEnd();
+			if(((comps.f.length == 1) || !comps.f[fn].refuseOthers) && ((that.blocking && comps.f[fn] === that.blocking) || !that.blocking))
+				comps.f[fn].clickEnd();
 		}
+		that.blocking = null;
+
 		for(var f in that.frame)
 			that.frame[f]._clickEnd();
 		for(var f in that.overlay)

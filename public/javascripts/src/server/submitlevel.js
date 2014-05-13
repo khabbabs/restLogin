@@ -1,15 +1,15 @@
 App.setupSubmitLevel = function(){
 	var submit = App.ModeHandler.addNewMode('submit level');
 
-		// ---------------------------------------------
-
+	// ---------------------------------------------
 
 	submit.gfx = App.Canvases.addNewLayer(2).getContext('2d');
 	submit.gui = new App.guiFrame(submit.gfx);
-
+	submit.locked = false;
 	var returnFunc = function(){
 		submit.requestStaticRenderUpdate = true;
-		App.ModeHandler.popMode();
+		if(App.ModeHandler.currentMode.name == submit.name)
+			App.ModeHandler.popMode();
 		endServerStatus();
 		submit.levelname.txt = submit.levelname.defaultText;
 		submit.leveldesc.txt = submit.leveldesc.defaultText;
@@ -48,15 +48,19 @@ App.setupSubmitLevel = function(){
 
 	submit.entrybox = [submit.cancelButton, submit.submitButton, submit.levelname, submit.leveldesc, submit.diffButton, submit.username, submit.password, submit.accountButton];
 
-	var endServerStatus = function(){
-		for(var b in submit.entrybox){
-			submit.gui.addComponent(submit.entrybox[b]);
+	var endServerStatus = function(dontkeep){
+
+		if(dontkeep){
+			for(var b in submit.entrybox){
+				submit.gui.addComponent(submit.entrybox[b]);
+			}
 		}
 		submit.serverstatus.reset();
 		submit.gui.removeComponent(submit.serverstatus);
 		submit.password.passwordString = '';
 		submit.password.txt = submit.password.defaultText;
 		submit.username.txt = submit.username.defaultText;
+		submit.locked = false;
 	}
 
 	submit.serverstatus = new App.GuiServerStatus(0, 200, returnFunc, endServerStatus);
@@ -71,11 +75,15 @@ App.setupSubmitLevel = function(){
 	submit.gui.addComponent(submit.accountButton);
 
 	var submitLevel = function(){
+
 		for(var b in submit.entrybox){
 			submit.gui.removeComponent(submit.entrybox[b]);
 		}
-		submit.gui.addComponent(submit.serverstatus);
 
+		if(submit.locked)
+			return;
+		submit.locked = true;
+		submit.gui.addComponent(submit.serverstatus);
 		App.Server.putLevel(App.Game.currentPlanningLevel.generateParseString(),
 			submit.username.txt,
 			submit.password.passwordString,
@@ -90,6 +98,7 @@ App.setupSubmitLevel = function(){
 		var success = (data.status == 'level saved');
 		var message = data.status;
 		submit.serverstatus.callback(success, message);
+
 	}
 
 	submit.alpha = submit.goalAlpha = 0;
@@ -102,6 +111,7 @@ App.setupSubmitLevel = function(){
 		submit.exitFlag = false;
 		submit.gui.enter();
 		submit.goalAlpha = 1;
+		endServerStatus(true);
 		submit.username.txt = submit.username.defaultText;
 		submit.password.txt = submit.password.defaultText;
 		submit.password.passwordString = '';
@@ -139,6 +149,10 @@ App.setupSubmitLevel = function(){
 	submit.exitFunc = function(){
 		submit.requestStaticRenderUpdate = true;
 		submit.exitFlag = true;
+		for(var b in submit.entrybox){
+			submit.gui.removeComponent(submit.entrybox[b]);
+		}
+
 
 		submit.gui.exit();
 		submit.goalAlpha = 0;
@@ -149,8 +163,4 @@ App.setupSubmitLevel = function(){
 
 	submit.registerKeyDownFunc('Enter', submitLevel);
 	submit.registerKeyDownFunc('Esc', returnFunc);
-
-	submit.registerResizeFunc(function(){
-		App.GameRenderer.bestFit();
-	});
 }

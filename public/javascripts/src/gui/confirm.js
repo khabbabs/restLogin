@@ -15,6 +15,7 @@ App.setupConfirm = function(){
 	confirm.noBtn  = new App.GuiTextButton(15,56+28*1,200,000,'No' ,function(){confirm.requestStaticRenderUpdate = true;App.ModeHandler.popMode();App.Shade.turnOff();},false,null,null);
 
 	confirm.yesBtn.hoverColor      = confirm.noBtn.hoverColor      = '#ff0000';
+	confirm.yesBtn.hoverTextColor  = confirm.noBtn.hoverColor      = '#ffffff';
 	confirm.yesBtn.activeColor     = confirm.noBtn.activeColor     = '#800000';
 	confirm.yesBtn.activeTextColor = confirm.noBtn.activeTextColor = '#ff0000';
 

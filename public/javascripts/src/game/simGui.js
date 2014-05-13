@@ -4,6 +4,8 @@ App.setupSimGui = function(){
 		// ---------------------------------------------
 
 	simMode.gfx = App.Canvases.addNewLayer(2).getContext('2d');
+	//TODO abstract this. It's kinda yucky
+	simMode.gui = App.ModeHandler.modes['planning'].gui;
 	simMode.renderStreams = false;
 
 		// ---------------------------------------------
@@ -12,16 +14,24 @@ App.setupSimGui = function(){
 		simMode.requestStaticRenderUpdate = true;
 		simMode.updatingActive = true;
 		simMode.exitFlag = false;
+		simMode.gui.gfx = simMode.gfx;
+		simMode.gui.enter();
 
 		App.Game.setMode(App.Game.modes.SIMULATION);
 		App.Shade.turnOff();
 	}
 
 	simMode.updateFunc = function(){
+		if(simMode.gui.update())
+			simMode.requestStaticRenderUpdate = true;
+
 		if(!simMode.requestStaticRenderUpdate)return;
 		simMode.requestStaticRenderUpdate = false;
 
 		simMode.gfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
+
+		if(simMode.gui.render())
+			simMode.requestStaticRenderUpdate = true;
 
 		if(simMode.renderStreams){
 			var keys = Object.keys(App.Game.inStreams);
@@ -69,6 +79,7 @@ App.setupSimGui = function(){
 	simMode.exitFunc = function(){
 		simMode.requestStaticRenderUpdate = true;
 		simMode.exitFlag = true;
+		simMode.gui.exit();
 		simMode.renderStreams = false;
 	}
 
@@ -93,6 +104,14 @@ App.setupSimGui = function(){
 	simMode.registerMouseMoveFunc(function(x,y){
 		App.GameRenderer.screenToGridCoords(x,y);
 		if(App.InputHandler.rmb)App.GameRenderer.pan(x,y);
+	});
+
+	simMode.registerMouseDownFunc(App.InputHandler.MOUSEBUTTON.LEFT, function(x, y){
+		simMode.gui.mouseDown(x, y);
+	});
+
+	simMode.registerMouseUpFunc(App.InputHandler.MOUSEBUTTON.LEFT, function(x, y){
+		simMode.gui.mouseUp(x, y);
 	});
 
 	simMode.registerMouseDownFunc(App.InputHandler.MOUSEBUTTON.RIGHT,function(x,y){

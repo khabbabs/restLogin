@@ -26,6 +26,9 @@ App.GuiTextBox = function(x, y, w, h, defaultText, en, ex, xorigin, yorigin){
 	this.clearIfDefault = true;
 	this.next = null;
 	this.submitFunc = null; //gets called on enter key press
+	this.limit = Infinity;
+	this.imposeUppercase = false;
+	this.changeListener = null;
 
 	this.passwordString = "";
 
@@ -306,12 +309,16 @@ App.GuiTextBox = function(x, y, w, h, defaultText, en, ex, xorigin, yorigin){
 
 		var width = App.GuiTextBox.textMeasure.measureText(that.txt).width + (that.txt.length * that.spacing);
 
-		if(width > that.w - 4){
+		if(that.imposeUppercase)
+			that.txt = that.txt.toUpperCase();
+
+		if(width > that.w - 4 || that.txt.length > that.limit){
 			that.cursorSpos = oldSpos;
 			that.cursorEpos = oldEpos;
 			that.txt 						= oldText;
 			that.passwordString = oldpw;
 		}
+		else if (that.changeListener) that.changeListener();
 
 	}
 	if(!App.GuiTextBox.textMeasure){

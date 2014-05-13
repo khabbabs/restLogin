@@ -12,6 +12,8 @@ App.SimulationInstruction = function(level,x,y,color,type,data){
 	this.data = data;
 
 	this.staticRender = function(){
+		if(!App.Game.visibilities[this.color])
+			return;
 		this.gfx.save();
 
 		var rx,ry,cs = App.GameRenderer.cellSize;

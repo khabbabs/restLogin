@@ -3,7 +3,7 @@ App.makeGameRenderer = function(){
 
 	game.debugGfx       = App.Canvases.addNewLayer(99).getContext('2d');
 	game.ghostGfx       = App.Canvases.addNewLayer( 0).getContext('2d');
-	game.tempGfx        = App.Canvases.addNewLayer(-1).getContext('2d'); 
+	game.tempGfx        = App.Canvases.addNewLayer(-1).getContext('2d');
 	game.automGfx       = App.Canvases.addNewLayer(-2).getContext('2d'); // need to set App.Game.ghostGfx.globalAlpha
 	game.tokenDGfx      = App.Canvases.addNewLayer(-3).getContext('2d');
 	game.tokenSGfx      = App.Canvases.addNewLayer(-4).getContext('2d');
@@ -120,7 +120,7 @@ App.makeGameRenderer = function(){
 	game.bestFit = function(){
 		var level = App.Game.currentPlanningLevel;
 		if(!level)return;
-		App.Game.setSimulationSpeed(512);
+		//App.Game.setSimulationSpeed(512);
 		game.cellSizeFactor = 4; // TODO: MAKE THIS BETTER
 		game.goalCellSize = 3*Math.pow(2,game.cellSizeFactor);
 		game.goalRenderX = Math.round((App.Canvases.width-level.width*game.goalCellSize)/2);
@@ -180,7 +180,12 @@ App.makeGameRenderer = function(){
 
 		// dynamic rendering
 		if(App.Game.mode === App.Game.modes.PLANNING && App.Game.currentPlanningLevel !== undefined){
+
+			game.ghostGfx.clearRect(0,0,App.Canvases.width,App.Canvases.height);
+			//game.translateCanvas(game.ghostGfx);
 			App.Game.currentPlanningLevel.dynamicRender();
+			//game.ghostGfx.restore();
+
 		}else if(App.Game.currentSimulationLevel !== undefined){
 			game.interpolation = (App.Engine.tick-App.Game.lastCycleTick)/(App.Game.nextCycleTick-App.Game.lastCycleTick);
 

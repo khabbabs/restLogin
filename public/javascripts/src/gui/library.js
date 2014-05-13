@@ -12,6 +12,7 @@ App.setupLibrary = function(){
 	},false,null,null);
 
 	library.backButton.hoverColor       = '#00ff00';
+	library.backButton.hoverTextColor   = '#ffffff';
 	library.backButton.activeColor      = '#008000';
 	library.backButton.activeTextColor  = '#00ff00';
 
@@ -34,7 +35,15 @@ App.setupLibrary = function(){
 		var e = library.table.getSelectedEntry();
 		if(e == null)
 			return;
-		App.Game.currentPlanningLevel = App.Game.parseLevel(e.level_str);
+		var level = App.Game.parseLevel(e.level_str);
+		if(!level){
+			console.log(e);
+			return;
+		}
+		App.Game.currentPlanningLevel = level;
+		App.Game.currentPlanningLevel.id = e._id;
+		console.log(e);
+		App.Server.updatePlayCount(e._id, App.Server.testPostCallback);
 		App.GameRenderer.bestFit();
 		App.ModeHandler.pushMode('planning');
 		library.requestStaticRenderUpdate = true;
@@ -53,6 +62,7 @@ App.setupLibrary = function(){
 	});
 
 	library.diffButton.hoverColor       = '#00ff00';
+	library.diffButton.hoverTextColor   = '#ffffff';
 	library.diffButton.activeColor      = '#008000';
 	library.diffButton.activeTextColor  = '#00ff00';
 	library.diffButton.w = 300;
@@ -72,6 +82,7 @@ App.setupLibrary = function(){
 	}, false, null, null);
 
 	library.typeButton.hoverColor       = '#00ff00';
+	library.typeButton.hoverTextColor   = '#ffffff';
 	library.typeButton.activeColor      = '#008000';
 	library.typeButton.activeTextColor  = '#00ff00';
 	library.typeButton.w = 128;
@@ -79,6 +90,7 @@ App.setupLibrary = function(){
 	library.goButton = new App.GuiTextButton(15 + 128 + 20 + 300, 56+28*2, 200, 000, 'Search!', go, false, null, null);
 
 	library.goButton.hoverColor       = '#00ff00';
+	library.goButton.hoverTextColor   = '#ffffff';
 	library.goButton.activeColor      = '#008000';
 	library.goButton.activeTextColor  = '#00ff00';
 	library.goButton.w = 128;
@@ -88,6 +100,7 @@ App.setupLibrary = function(){
 	library.loadButton = new App.GuiTextButton(library.table.w + 30, 152, 200, 000, 'Load Level', loadLevel, false, null, null);
 
 	library.loadButton.hoverColor       = '#00ff00';
+	library.loadButton.hoverTextColor   = '#ffffff';
 	library.loadButton.activeColor      = '#008000';
 	library.loadButton.activeTextColor  = '#00ff00';
 	library.loadButton.w = 128;

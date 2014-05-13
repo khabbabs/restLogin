@@ -12,16 +12,18 @@ window.onload = function(){
 	App.setupMainMenu();
 	App.setupLevelSelect();
 	App.setupLibrary();
-	App.setupSettings();
+	App.setupHelp();
 	App.confirmGui = App.setupConfirm();
 	App.setupSubmitLevel();
 	App.setupCreateAccount();
+	App.setupPropertiesGui();
+	App.setupSuccessGui();
+	App.setupModificationGui();
 
 	// TODO: split below into normal and sandbox versions?
 	App.setupPlanGui();
 	App.setupSimGui();
 	App.setupErrorGui();
-	App.setupSuccessGui();
-	
+
 	App.Engine.run();
 }

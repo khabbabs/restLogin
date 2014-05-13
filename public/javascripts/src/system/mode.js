@@ -44,6 +44,7 @@ App.makeModeHandler = function(){
 		mode.mouseUpFuncs    = [];
 		mode.mouseWheelFunc;
 		mode.resizeFunc;
+		mode.name = name;
 
 		mode.registerKeyDownFunc    = function(key,func){mode.keyDownFuncs[App.InputHandler.keyCharToCode[key]]=func;}
 		mode.registerKeyUpFunc      = function(key,func){mode.keyUpFuncs[App.InputHandler.keyCharToCode[key]]=func;}

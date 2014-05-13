@@ -7,4 +7,5 @@ App.loadDemo = function(){
 	App.Game.currentPlanningLevel = App.Game.parseLevel(App.demoLevels[Math.floor(Math.random()*App.demoLevels.length)]);
 	App.Game.setMode(App.Game.modes.SIMULATION);
 	App.GameRenderer.bestFit();
+	App.Game.setSimulationSpeed(512);
 }

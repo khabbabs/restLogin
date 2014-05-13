@@ -1,7 +1,7 @@
 App.createCanvasArray = function(){
 	var canvases = {};
-	canvases.width;
-	canvases.height;
+	canvases.width = window.innerWidth;
+	canvases.height = window.innerHeight;
 	canvases.halfWidth;
 	canvases.halfHeight;
 	canvases.layers = [];

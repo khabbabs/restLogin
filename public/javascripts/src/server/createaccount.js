@@ -8,7 +8,8 @@ App.setupCreateAccount = function(){
 
 	var returnFunc = function(){
 		create.requestStaticRenderUpdate = true;
-		App.ModeHandler.popMode();
+		if(App.ModeHandler.currentMode.name == create.name)
+			App.ModeHandler.popMode();
 		endServerStatus();
 	}
 
@@ -25,9 +26,11 @@ App.setupCreateAccount = function(){
 	create.password.passwordMode = true;
 	create.username.next = create.password;
 
-	var endServerStatus = function(){
-		for(var b in create.entrybox){
-			create.gui.addComponent(create.entrybox[b]);
+	var endServerStatus = function(dontkeep){
+		if(!dontkeep){
+			for(var b in create.entrybox){
+				create.gui.addComponent(create.entrybox[b]);
+			}
 		}
 		create.gui.removeComponent(create.serverstatus);
 		create.serverstatus.reset();
@@ -71,6 +74,7 @@ App.setupCreateAccount = function(){
 		create.updatingActive = true;
 		create.exitFlag = false;
 		create.gui.enter();
+		endServerStatus(true);
 		create.goalAlpha = 1;
 		create.username.txt = create.username.defaultText;
 		create.password.txt = create.password.defaultText;
@@ -110,6 +114,7 @@ App.setupCreateAccount = function(){
 		create.requestStaticRenderUpdate = true;
 		create.exitFlag = true;
 
+
 		create.gui.exit();
 		create.goalAlpha = 0;
 	}
@@ -119,8 +124,4 @@ App.setupCreateAccount = function(){
 
 	create.registerKeyDownFunc('Enter', createRequest);
 	create.registerKeyDownFunc('Esc', returnFunc);
-
-	create.registerResizeFunc(function(){
-		App.GameRenderer.bestFit();
-	});
 }

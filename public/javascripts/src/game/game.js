@@ -12,6 +12,9 @@ App.makeGame = function(){
 	game.inStreams  = []; // inStreams[variable] = [raw,parsed,[gives],stackPtr,color]
 	game.outStreams = []; // outStreams[variable] = [raw,parsed,[wants],stackPtr,quota,description,color]
 	game.flipFlop   = [true,true,true,true];
+	game.visibilities=[true,true,true,true];
+
+	game.toggleVisible = function(c){game.visibilities[c] = !game.visibilities[c]; App.GameRenderer.requestStaticRenderUpdate = true;}
 
 	game.createNewLevel = function(name,width,height){
 		var lvl = new App.PlanningLevel();
@@ -53,23 +56,43 @@ App.makeGame = function(){
 			if(d !== undefined && game.streams[d])return undefined;
 		//	if(!lvl.insert(x,y,c,t,d))return undefined;
 			var ins = new App.PlanningInstruction(x,y,c,t,d);
+			ins.isProtected = true;
 			if(!lvl.insert(ins))return undefined;
 			switch(t){ // TODO: MOVE THIS TO PLANNING LEVEL INSERT | ADD APPROPRIATE STUFF TO PLANNING LEVEL DELETE
 				case App.InstCatalog.TYPES['IN']:
+					if(data[i].length <= 4)
+						return undefined;
 					var p = Parser.parse(data[i][5]);
 					if(p === undefined)return undefined;
 					game.inStreams[d]=[data[i][5],p,[],0,c];
+					ins.data2 = data[i][5];
 					break;
 				case App.InstCatalog.TYPES['OUT']:
+					if(data[i].length <= 4)
+							return undefined;
 					var p = Parser.parse(data[i][5]);
 					if(p === undefined)return undefined;
 					game.outStreams[d]=[data[i][5],p,[],0,data[i][6],data[i][7],c];
+					ins.data2 = data[i][5];
 					break;
 			}game.streams[d] = true;
 		}
 
 		lvl.killUndo();
 		return lvl;
+	}
+
+	game.addStream = function(letter, isInStream, func, funcString, total, color){
+		game.streams[letter] = true;
+		if(!isInStream)
+			game.outStreams[letter] = [funcString, func, [], 0, total, undefined, color];
+		else
+			game.inStreams[letter] =  [funcString, func, [], 0, color];
+	}
+	game.removeStream = function(letter){
+		delete(App.Game.outStreams[letter]);
+		delete(App.Game.inStreams[letter]);
+		App.Game.streams[letter] = false;
 	}
 
 		/*--------------------------------------------*/
